@@ -1,0 +1,26 @@
+### Create application
+
+POST http://localhost:8080/api/applications
+Content-Type: application/json
+
+{
+  "company": "Example Company",
+  "role": "Graduate Software Engineer",
+  "location": "Auckland",
+  "status": "APPLIED",
+  "dateApplied": "2026-09-27",
+  "jobUrl": "https://example.com/jobs/123",
+  "notes": "Applied through company website"
+}
+
+### Get all applications
+
+GET http://localhost:8080/api/applications
+
+### Get application 1
+
+GET http://localhost:8080/api/applications/1
+
+### Delete application 1
+
+DELETE http://localhost:8080/api/applications/1
