@@ -1,6 +1,7 @@
 package com.example.jobtracker.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 
@@ -12,8 +13,10 @@ public class JobApplication {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Company is required")
     private String company;
 
+    @NotBlank(message = "Role is required")
     private String role;
 
     private String location;
