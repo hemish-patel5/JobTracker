@@ -1,3 +1,13 @@
+### Get all applications
+
+GET http://localhost:8080/api/applications
+
+
+### Get application by ID
+
+GET http://localhost:8080/api/applications/1
+
+
 ### Create application
 
 POST http://localhost:8080/api/applications
@@ -13,14 +23,23 @@ Content-Type: application/json
   "notes": "Applied through company website"
 }
 
-### Get all applications
 
-GET http://localhost:8080/api/applications
+### Update application
 
-### Get application 1
+PUT http://localhost:8080/api/applications/1
+Content-Type: application/json
 
-GET http://localhost:8080/api/applications/1
+{
+  "company": "Example Company",
+  "role": "Graduate Software Engineer",
+  "location": "Auckland",
+  "status": "INTERVIEW",
+  "dateApplied": "2026-09-27",
+  "jobUrl": "https://example.com/jobs/123",
+  "notes": "Interview invitation received"
+}
 
-### Delete application 1
+
+### Delete application
 
 DELETE http://localhost:8080/api/applications/1

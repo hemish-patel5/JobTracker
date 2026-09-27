@@ -28,6 +28,45 @@ public class JobApplicationService {
         return repository.save(application);
     }
 
+    public Optional<JobApplication> updateApplication(
+            Long id,
+            JobApplication updatedApplication
+    ) {
+        return repository.findById(id)
+                .map(existingApplication -> {
+
+                    existingApplication.setCompany(
+                            updatedApplication.getCompany()
+                    );
+
+                    existingApplication.setRole(
+                            updatedApplication.getRole()
+                    );
+
+                    existingApplication.setLocation(
+                            updatedApplication.getLocation()
+                    );
+
+                    existingApplication.setStatus(
+                            updatedApplication.getStatus()
+                    );
+
+                    existingApplication.setDateApplied(
+                            updatedApplication.getDateApplied()
+                    );
+
+                    existingApplication.setJobUrl(
+                            updatedApplication.getJobUrl()
+                    );
+
+                    existingApplication.setNotes(
+                            updatedApplication.getNotes()
+                    );
+
+                    return repository.save(existingApplication);
+                });
+    }
+
     public void deleteApplication(Long id) {
         repository.deleteById(id);
     }

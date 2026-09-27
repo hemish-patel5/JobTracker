@@ -44,4 +44,13 @@ public class JobApplicationController {
 
         return ResponseEntity.noContent().build();
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<JobApplication> updateApplication(
+            @PathVariable Long id,
+            @RequestBody JobApplication application
+    ) {
+        return service.updateApplication(id, application)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
