@@ -69,6 +69,9 @@ async function isGmailConnected(signal?: AbortSignal) {
 }
 
 function App() {
+  const [activePage, setActivePage] = useState<'applications' | 'emails'>(
+    'applications',
+  )
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -307,11 +310,33 @@ function App() {
   return (
     <main className="tracker">
       <header className="tracker-header">
-        <h1>BetterTracker</h1>
+        <div className="brand-navigation">
+          <h1>BetterTracker</h1>
+          <nav className="page-navigation" aria-label="Main navigation">
+            <button
+              type="button"
+              className={activePage === 'applications' ? 'active' : undefined}
+              aria-pressed={activePage === 'applications'}
+              onClick={() => setActivePage('applications')}
+            >
+              Applications
+            </button>
+            <button
+              type="button"
+              className={activePage === 'emails' ? 'active' : undefined}
+              aria-pressed={activePage === 'emails'}
+              onClick={() => setActivePage('emails')}
+            >
+              Job Emails
+            </button>
+          </nav>
+        </div>
         <div className="header-actions">
-          <button type="button" onClick={openAddForm}>
-            + Add Application
-          </button>
+          {activePage === 'applications' && (
+            <button type="button" onClick={openAddForm}>
+              + Add Application
+            </button>
+          )}
           <div className="gmail-actions">
             <button
               type="button"
@@ -328,115 +353,123 @@ function App() {
         </div>
       </header>
 
-      <section className="summary" aria-label="Application summary">
-        <span>{applications.length} Total</span>
-        <span>{countByStatus('APPLIED')} Applied</span>
-        <span>{countByStatus('INTERVIEW')} Interview</span>
-        <span>{countByStatus('OFFER')} Offer</span>
-      </section>
+      {activePage === 'applications' && (
+        <>
+          <section className="summary" aria-label="Application summary">
+            <span>{applications.length} Total</span>
+            <span>{countByStatus('APPLIED')} Applied</span>
+            <span>{countByStatus('INTERVIEW')} Interview</span>
+            <span>{countByStatus('OFFER')} Offer</span>
+          </section>
 
-      <section className="filters" aria-label="Application filters">
-        <label>
-          <span className="sr-only">Search applications</span>
-          <input
-            type="search"
-            placeholder="Search applications..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <label className="status-filter">
-          <span>Status:</span>
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as ApplicationStatus | 'ALL')
-            }
-          >
-            <option value="ALL">[ All ▼ ]</option>
-            {statuses.map((applicationStatus) => (
-              <option value={applicationStatus} key={applicationStatus}>
-                {statusLabels[applicationStatus]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
+          <section className="filters" aria-label="Application filters">
+            <label>
+              <span className="sr-only">Search applications</span>
+              <input
+                type="search"
+                placeholder="Search applications..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <label className="status-filter">
+              <span>Status:</span>
+              <select
+                value={status}
+                onChange={(event) =>
+                  setStatus(event.target.value as ApplicationStatus | 'ALL')
+                }
+              >
+                <option value="ALL">[ All ▼ ]</option>
+                {statuses.map((applicationStatus) => (
+                  <option value={applicationStatus} key={applicationStatus}>
+                    {statusLabels[applicationStatus]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </section>
 
-      {isLoading && <p className="message">Loading applications...</p>}
+          {isLoading && <p className="message">Loading applications...</p>}
 
-      {error && (
-        <div className="message error-message" role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={retryLoadingApplications}>
-            Try again
-          </button>
-        </div>
+          {error && (
+            <div className="message error-message" role="alert">
+              <span>{error}</span>
+              <button type="button" onClick={retryLoadingApplications}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!isLoading && !error && filteredApplications.length === 0 && (
+            <p className="message">No applications found.</p>
+          )}
+
+          {!isLoading && !error && filteredApplications.length > 0 && (
+            <section className="application-list" aria-label="Job applications">
+              {filteredApplications.map((application) => (
+                <article className="application-card" key={application.id}>
+                  <p>{application.company}</p>
+                  <p>{application.role}</p>
+                  <div className="application-meta">
+                    <span>{application.location || 'Not specified'}</span>
+                    <span>{statusLabels[application.status]}</span>
+                  </div>
+                  <p>Applied {formatDate(application.dateApplied)}</p>
+                  <div className="application-actions">
+                    <button type="button" onClick={() => openEditForm(application)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(application)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
+        </>
       )}
 
-      {!isLoading && !error && filteredApplications.length === 0 && (
-        <p className="message">No applications found.</p>
-      )}
+      {activePage === 'emails' && (
+        <section className="gmail-message-section" aria-label="Gmail messages">
+          <div className="section-heading">
+            <h2>Job Emails</h2>
+            <button type="button" onClick={() => void loadGmailMessages()}>
+              Refresh
+            </button>
+          </div>
 
-      {!isLoading && !error && filteredApplications.length > 0 && (
-        <section className="application-list" aria-label="Job applications">
-          {filteredApplications.map((application) => (
-            <article className="application-card" key={application.id}>
-              <p>{application.company}</p>
-              <p>{application.role}</p>
-              <div className="application-meta">
-                <span>{application.location || 'Not specified'}</span>
-                <span>{statusLabels[application.status]}</span>
-              </div>
-              <p>Applied {formatDate(application.dateApplied)}</p>
-              <div className="application-actions">
-                <button type="button" onClick={() => openEditForm(application)}>
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDelete(application)}
-                >
-                  Delete
-                </button>
-              </div>
+          {gmailLoading && <p className="message">Loading Gmail messages...</p>}
+
+          {!gmailLoading && gmailError && (
+            <div className="message error-message" role="alert">
+              <span>{gmailError}</span>
+              <button type="button" onClick={() => void loadGmailMessages()}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!gmailLoading && !gmailError && gmailMessages.length === 0 && (
+            <p className="message">No job-related Gmail messages found.</p>
+          )}
+
+          {!gmailLoading && !gmailError && gmailMessages.map((message) => (
+            <article className="gmail-message" key={message.id}>
+              <p className="gmail-subject">
+                {message.subject || '(No subject)'}
+              </p>
+              <p>From: {message.from || 'Unknown sender'}</p>
+              <p>{message.snippet || 'No message preview available.'}</p>
+              <p className="gmail-id">Gmail ID: {message.id}</p>
             </article>
           ))}
         </section>
       )}
-
-      <section className="gmail-message-section" aria-label="Gmail messages">
-        <div className="section-heading">
-          <h2>Job Emails</h2>
-          <button type="button" onClick={() => void loadGmailMessages()}>
-            Refresh
-          </button>
-        </div>
-
-        {gmailLoading && <p className="message">Loading Gmail messages...</p>}
-
-        {!gmailLoading && gmailError && (
-          <div className="message error-message" role="alert">
-            <span>{gmailError}</span>
-            <button type="button" onClick={() => void loadGmailMessages()}>
-              Try again
-            </button>
-          </div>
-        )}
-
-        {!gmailLoading && !gmailError && gmailMessages.length === 0 && (
-          <p className="message">No job-related Gmail messages found.</p>
-        )}
-
-        {!gmailLoading && !gmailError && gmailMessages.map((message) => (
-          <article className="gmail-message" key={message.id}>
-            <p className="gmail-subject">{message.subject || '(No subject)'}</p>
-            <p>From: {message.from || 'Unknown sender'}</p>
-            <p>{message.snippet || 'No message preview available.'}</p>
-            <p className="gmail-id">Gmail ID: {message.id}</p>
-          </article>
-        ))}
-      </section>
 
       {isFormOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={closeForm}>

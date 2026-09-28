@@ -43,6 +43,25 @@
   font-weight: 700;
 }
 
+.brand-navigation,
+.page-navigation {
+  display: flex;
+  align-items: center;
+}
+
+.brand-navigation {
+  gap: 18px;
+}
+
+.page-navigation {
+  gap: 4px;
+}
+
+.page-navigation button.active {
+  border-style: inset;
+  background: #fff;
+}
+
 .header-actions {
   display: flex;
   align-items: stretch;
