@@ -1,7 +1,7 @@
 :root {
   font-family: "Courier New", Courier, monospace;
-  color: #f5f5f5;
-  background: #111;
+  color: #111;
+  background: #fff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +16,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #111;
+  background: #fff;
 }
 
 button,

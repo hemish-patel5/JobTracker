@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getApplications } from './api/applications'
+import {
+  createApplication,
+  getApplications,
+  type NewJobApplication,
+} from './api/applications'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import './App.css'
 
@@ -15,6 +19,16 @@ const statusLabels: Record<ApplicationStatus, string> = {
 
 const statuses = Object.keys(statusLabels) as ApplicationStatus[]
 
+const emptyApplication: NewJobApplication = {
+  company: '',
+  role: '',
+  location: '',
+  status: 'APPLIED',
+  dateApplied: new Date().toLocaleDateString('en-CA'),
+  jobUrl: '',
+  notes: '',
+}
+
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('en-NZ', {
     day: 'numeric',
@@ -28,11 +42,13 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<ApplicationStatus | 'ALL'>('ALL')
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [newApplication, setNewApplication] =
+    useState<NewJobApplication>(emptyApplication)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true)
-    setError(null)
-
     try {
       setApplications(await getApplications(signal))
     } catch (requestError) {
@@ -52,8 +68,16 @@ function App() {
     }
   }, [])
 
+  const retryLoadingApplications = () => {
+    setIsLoading(true)
+    setError(null)
+    void loadApplications()
+  }
+
   useEffect(() => {
     const controller = new AbortController()
+    // Fetching API data is the external synchronization performed by this effect.
+    // oxlint-disable-next-line react/set-state-in-effect
     void loadApplications(controller.signal)
 
     return () => controller.abort()
@@ -81,11 +105,47 @@ function App() {
     applications.filter((application) => application.status === applicationStatus)
       .length
 
+  const updateField = <K extends keyof NewJobApplication>(
+    field: K,
+    value: NewJobApplication[K],
+  ) => {
+    setNewApplication((current) => ({ ...current, [field]: value }))
+  }
+
+  const closeForm = () => {
+    if (isSaving) return
+    setIsFormOpen(false)
+    setFormError(null)
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setIsSaving(true)
+    setFormError(null)
+
+    try {
+      const createdApplication = await createApplication(newApplication)
+      setApplications((current) => [...current, createdApplication])
+      setNewApplication(emptyApplication)
+      setIsFormOpen(false)
+    } catch (requestError) {
+      setFormError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to add application',
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <main className="tracker">
       <header className="tracker-header">
         <h1>JobTracker</h1>
-        <button type="button">+ Add Application</button>
+        <button type="button" onClick={() => setIsFormOpen(true)}>
+          + Add Application
+        </button>
       </header>
 
       <section className="summary" aria-label="Application summary">
@@ -128,7 +188,7 @@ function App() {
       {error && (
         <div className="message error-message" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => void loadApplications()}>
+          <button type="button" onClick={retryLoadingApplications}>
             Try again
           </button>
         </div>
@@ -152,6 +212,99 @@ function App() {
             </article>
           ))}
         </section>
+      )}
+
+      {isFormOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeForm}>
+          <section
+            className="application-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="application-form-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h2 id="application-form-title">Add Application</h2>
+            <form onSubmit={handleSubmit}>
+              <label>
+                Company
+                <input
+                  required
+                  autoFocus
+                  value={newApplication.company}
+                  onChange={(event) => updateField('company', event.target.value)}
+                />
+              </label>
+              <label>
+                Role
+                <input
+                  required
+                  value={newApplication.role}
+                  onChange={(event) => updateField('role', event.target.value)}
+                />
+              </label>
+              <label>
+                Location
+                <input
+                  value={newApplication.location}
+                  onChange={(event) => updateField('location', event.target.value)}
+                />
+              </label>
+              <label>
+                Status
+                <select
+                  value={newApplication.status}
+                  onChange={(event) =>
+                    updateField('status', event.target.value as ApplicationStatus)
+                  }
+                >
+                  {statuses.map((applicationStatus) => (
+                    <option value={applicationStatus} key={applicationStatus}>
+                      {statusLabels[applicationStatus]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Date Applied
+                <input
+                  required
+                  type="date"
+                  value={newApplication.dateApplied}
+                  onChange={(event) =>
+                    updateField('dateApplied', event.target.value)
+                  }
+                />
+              </label>
+              <label>
+                Job URL
+                <input
+                  type="url"
+                  value={newApplication.jobUrl}
+                  onChange={(event) => updateField('jobUrl', event.target.value)}
+                />
+              </label>
+              <label>
+                Notes
+                <textarea
+                  rows={3}
+                  value={newApplication.notes}
+                  onChange={(event) => updateField('notes', event.target.value)}
+                />
+              </label>
+
+              {formError && <p className="form-error">{formError}</p>}
+
+              <div className="form-actions">
+                <button type="button" onClick={closeForm} disabled={isSaving}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Adding...' : 'Add Application'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
     </main>
   )
