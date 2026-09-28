@@ -9,5 +9,5 @@ public interface ProcessedGmailMessageRepository
         extends JpaRepository<ProcessedGmailMessage, String> {
 
     List<ProcessedGmailMessage>
-    findByJobRelatedTrueOrderByProcessedAtDesc();
+    findByJobRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc();
 }

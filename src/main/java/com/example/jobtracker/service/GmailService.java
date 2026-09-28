@@ -20,9 +20,8 @@ public class GmailService {
 
     private static final String JOB_EMAIL_QUERY =
             "in:inbox newer_than:90d " +
-            "{application interview assessment candidate recruitment " +
-            "graduate internship position role offer unfortunately " +
-            "\"next stage\" \"next step\"}";
+            "{category:primary category:updates} " +
+            JobEmailKeywords.asGmailSearchGroup();
 
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;
@@ -127,7 +126,8 @@ public class GmailService {
                             gmailMessage.subject(),
                             gmailMessage.snippet(),
                             jobRelated,
-                            gmailMessage.receivedAt()
+                            gmailMessage.receivedAt(),
+                            true
                     )
             );
         }
@@ -138,7 +138,7 @@ public class GmailService {
     private List<GmailMessageDto> getSavedJobMessages() {
 
         return processedMessageRepository
-                .findByJobRelatedTrueOrderByProcessedAtDesc()
+                .findByJobRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc()
                 .stream()
                 .map(message ->
                         new GmailMessageDto(
