@@ -234,6 +234,11 @@
   font: inherit;
 }
 
+.email-controls {
+  display: flex;
+  gap: 6px;
+}
+
 .gmail-message {
   padding: 12px;
   background: #fff;

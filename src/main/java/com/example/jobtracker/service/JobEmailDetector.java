@@ -16,9 +16,7 @@ public class JobEmailDetector {
             "recruitment",
             "graduate",
             "internship",
-            "position",
-            "role",
-            "offer",
+            "developer",
             "unfortunately",
             "next stage",
             "next step"

@@ -40,6 +40,15 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T00:00:00`))
 }
 
+function formatEmailDate(timestamp: number | null) {
+  if (timestamp === null) return 'Unknown'
+
+  return new Intl.DateTimeFormat('en-NZ', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(timestamp))
+}
+
 function connectGmail() {
   window.location.href = 'http://localhost:8080/api/gmail/connect'
 }
@@ -89,6 +98,7 @@ function App() {
   const [gmailMessages, setGmailMessages] = useState<GmailMessage[]>([])
   const [gmailLoading, setGmailLoading] = useState(true)
   const [gmailError, setGmailError] = useState<string | null>(null)
+  const [emailSort, setEmailSort] = useState<'latest' | 'oldest'>('latest')
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -193,6 +203,15 @@ function App() {
       return matchesStatus && matchesSearch
     })
   }, [applications, search, status])
+
+  const sortedGmailMessages = useMemo(
+    () => [...gmailMessages].sort((first, second) =>
+      emailSort === 'latest'
+        ? (second.receivedAt ?? 0) - (first.receivedAt ?? 0)
+        : (first.receivedAt ?? 0) - (second.receivedAt ?? 0),
+    ),
+    [emailSort, gmailMessages],
+  )
 
   const countByStatus = (applicationStatus: ApplicationStatus) =>
     applications.filter((application) => application.status === applicationStatus)
@@ -438,9 +457,21 @@ function App() {
         <section className="gmail-message-section" aria-label="Gmail messages">
           <div className="section-heading">
             <h2>Job Emails</h2>
-            <button type="button" onClick={() => void loadGmailMessages()}>
-              Refresh
-            </button>
+            <div className="email-controls">
+              <button
+                type="button"
+                onClick={() =>
+                  setEmailSort((current) =>
+                    current === 'latest' ? 'oldest' : 'latest',
+                  )
+                }
+              >
+                Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
+              </button>
+              <button type="button" onClick={() => void loadGmailMessages()}>
+                Refresh
+              </button>
+            </div>
           </div>
 
           {gmailLoading && <p className="message">Loading Gmail messages...</p>}
@@ -458,7 +489,7 @@ function App() {
             <p className="message">No job-related Gmail messages found.</p>
           )}
 
-          {!gmailLoading && !gmailError && gmailMessages.map((message) => (
+          {!gmailLoading && !gmailError && sortedGmailMessages.map((message) => (
             <article className="gmail-message" key={message.id}>
               <p className="gmail-subject">
                 <a
@@ -470,6 +501,7 @@ function App() {
                 </a>
               </p>
               <p>From: {message.from || 'Unknown sender'}</p>
+              <p>Received: {formatEmailDate(message.receivedAt)}</p>
               <p>{message.snippet || 'No message preview available.'}</p>
               <p className="gmail-id">Gmail ID: {message.id}</p>
             </article>

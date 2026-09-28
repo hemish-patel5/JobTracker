@@ -22,6 +22,8 @@ public class ProcessedGmailMessage {
 
     private Boolean jobRelated;
 
+    private Long receivedAt;
+
     public ProcessedGmailMessage() {
     }
 
@@ -35,7 +37,8 @@ public class ProcessedGmailMessage {
             String sender,
             String subject,
             String snippet,
-            boolean jobRelated
+            boolean jobRelated,
+            Long receivedAt
     ) {
         this.gmailMessageId = gmailMessageId;
         this.processedAt = LocalDateTime.now();
@@ -43,6 +46,7 @@ public class ProcessedGmailMessage {
         this.subject = subject;
         this.snippet = snippet;
         this.jobRelated = jobRelated;
+        this.receivedAt = receivedAt;
     }
 
     public String getGmailMessageId() {
@@ -69,7 +73,11 @@ public class ProcessedGmailMessage {
         return jobRelated;
     }
 
+    public Long getReceivedAt() {
+        return receivedAt;
+    }
+
     public boolean hasMessageData() {
-        return jobRelated != null;
+        return jobRelated != null && receivedAt != null;
     }
 }

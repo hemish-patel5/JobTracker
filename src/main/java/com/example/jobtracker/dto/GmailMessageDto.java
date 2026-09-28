@@ -4,6 +4,7 @@ public record GmailMessageDto(
         String id,
         String from,
         String subject,
-        String snippet
+        String snippet,
+        Long receivedAt
 ) {
 }

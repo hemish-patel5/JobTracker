@@ -18,6 +18,12 @@ import java.util.Optional;
 @Service
 public class GmailService {
 
+    private static final String JOB_EMAIL_QUERY =
+            "in:inbox newer_than:90d " +
+            "{application interview assessment candidate recruitment " +
+            "graduate internship position role offer unfortunately " +
+            "\"next stage\" \"next step\"}";
+
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;
     private final JobEmailDetector jobEmailDetector;
@@ -59,8 +65,8 @@ public class GmailService {
                 gmail.users()
                         .messages()
                         .list("me")
-                        .setQ("in:inbox newer_than:30d {category:primary category:updates}")
-                        .setMaxResults(20L)
+                        .setQ(JOB_EMAIL_QUERY)
+                        .setMaxResults(100L)
                         .execute();
 
         if (response.getMessages() == null) {
@@ -105,7 +111,8 @@ public class GmailService {
                             message.getId(),
                             decodeHtml(getHeader(message, "From")),
                             decodeHtml(getHeader(message, "Subject")),
-                            decodeHtml(message.getSnippet())
+                            decodeHtml(message.getSnippet()),
+                            message.getInternalDate()
                     );
 
             boolean jobRelated =
@@ -119,7 +126,8 @@ public class GmailService {
                             gmailMessage.from(),
                             gmailMessage.subject(),
                             gmailMessage.snippet(),
-                            jobRelated
+                            jobRelated,
+                            gmailMessage.receivedAt()
                     )
             );
         }
@@ -137,7 +145,8 @@ public class GmailService {
                                 message.getGmailMessageId(),
                                 decodeHtml(message.getSender()),
                                 decodeHtml(message.getSubject()),
-                                decodeHtml(message.getSnippet())
+                                decodeHtml(message.getSnippet()),
+                                message.getReceivedAt()
                         )
                 )
                 .toList();

@@ -3,4 +3,5 @@ export interface GmailMessage {
   from: string
   subject: string
   snippet: string
+  receivedAt: number | null
 }
