@@ -1,222 +1,169 @@
-.app-shell {
-  width: min(1120px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 64px 0 80px;
+.tracker {
+  width: min(700px, calc(100% - 24px));
+  min-height: calc(100vh - 24px);
+  margin: 12px auto;
+  border: 1px solid #f5f5f5;
+  background: #111;
 }
 
-.page-header {
+.tracker-header,
+.summary,
+.filters,
+.application-card,
+.message {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.tracker-header,
+.filters,
+.application-meta {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 40px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  color: #2563eb;
-  font-size: 0.78rem;
-  font-weight: 750;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-  color: #172033;
-  font-size: clamp(2.25rem, 5vw, 4rem);
-  letter-spacing: -0.055em;
-  line-height: 1;
-}
-
-.subtitle {
-  margin: 14px 0 0;
-  color: #667085;
-}
-
-.application-count {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: #667085;
-  white-space: nowrap;
-}
-
-.application-count strong {
-  color: #172033;
-  font-size: 1.65rem;
-}
-
-.application-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
-.application-card {
-  display: flex;
-  min-height: 250px;
-  flex-direction: column;
-  padding: 26px;
-  border: 1px solid #e3e7ee;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgb(23 32 51 / 5%);
-}
-
-.card-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.company {
-  margin: 0 0 5px;
-  color: #667085;
-  font-size: 0.88rem;
-  font-weight: 650;
-}
-
-.application-card h2 {
+.tracker-header h1 {
   margin: 0;
-  color: #172033;
-  font-size: 1.25rem;
-  line-height: 1.3;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
-.status {
-  flex: none;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: #eff4ff;
-  color: #2f5fb3;
-  font-size: 0.7rem;
-  font-weight: 750;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.tracker-header button,
+.error-message button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
 }
 
-.status-interview,
-.status-online_assessment {
-  background: #fff4e5;
-  color: #a15c07;
-}
-
-.status-offer {
-  background: #e8f7ee;
-  color: #187747;
-}
-
-.status-rejected,
-.status-withdrawn {
-  background: #f3f4f6;
-  color: #667085;
-}
-
-.application-details {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  margin: 28px 0 20px;
-}
-
-.application-details div {
-  min-width: 0;
-}
-
-.application-details dt {
-  margin-bottom: 3px;
-  color: #98a2b3;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.application-details dd {
-  overflow: hidden;
-  margin: 0;
-  color: #344054;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notes {
-  margin: 0 0 22px;
-  color: #667085;
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
-.job-link {
-  align-self: flex-start;
-  margin-top: auto;
-  color: #245dc1;
-  font-size: 0.88rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.job-link:hover {
+.tracker-header button:hover,
+.error-message button:hover {
   text-decoration: underline;
 }
 
-.message {
-  padding: 48px 28px;
-  border: 1px solid #e3e7ee;
-  border-radius: 18px;
-  background: #fff;
-  color: #667085;
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  min-height: 94px;
+  align-items: center;
   text-align: center;
 }
 
-.message h2 {
-  margin: 0 0 8px;
-  color: #172033;
+.filters {
+  padding-block: 10px;
 }
 
-.message p {
+.filters > label:first-child {
+  flex: 1;
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #f5f5f5;
+  background: transparent;
+}
+
+.filters input::placeholder {
+  color: #f5f5f5;
+  opacity: 1;
+}
+
+.filters input::-webkit-search-cancel-button {
+  filter: invert(1);
+}
+
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.status-filter select {
+  cursor: pointer;
+  appearance: none;
+}
+
+.status-filter option {
+  color: #111;
+  background: #fff;
+}
+
+.application-list .application-card:last-child,
+.tracker > .message:last-child {
+  border-bottom: 0;
+}
+
+.application-card {
+  min-height: 140px;
+  padding-top: 34px;
+}
+
+.application-card p {
+  margin: 0 0 7px;
+}
+
+.application-meta {
+  max-width: 510px;
+  margin-bottom: 7px;
+}
+
+.application-meta span:last-child {
+  min-width: 170px;
+  text-align: left;
+}
+
+.message {
   margin: 0;
-}
-
-.error-message {
+  min-height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  color: #b42318;
+  text-align: center;
 }
 
-.error-message button {
-  padding: 8px 13px;
+.error-message {
+  gap: 18px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
   border: 0;
-  border-radius: 8px;
-  background: #172033;
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
 }
 
-@media (max-width: 720px) {
-  .app-shell {
-    width: min(100% - 28px, 560px);
-    padding-top: 38px;
+@media (max-width: 600px) {
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px 8px;
   }
 
-  .page-header {
-    align-items: flex-start;
+  .filters {
+    align-items: stretch;
     flex-direction: column;
-    margin-bottom: 28px;
   }
 
-  .application-grid {
-    grid-template-columns: 1fr;
+  .status-filter {
+    justify-content: space-between;
   }
 
-  .application-card {
-    min-height: 0;
+  .status-filter select {
+    width: auto;
+  }
+
+  .application-meta span:last-child {
+    min-width: auto;
   }
 }

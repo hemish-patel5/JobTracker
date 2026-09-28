@@ -1,23 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getApplications } from './api/applications'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import './App.css'
 
 const statusLabels: Record<ApplicationStatus, string> = {
-  SAVED: 'Saved',
-  APPLIED: 'Applied',
-  ONLINE_ASSESSMENT: 'Online assessment',
-  INTERVIEW: 'Interview',
-  OFFER: 'Offer',
-  REJECTED: 'Rejected',
-  WITHDRAWN: 'Withdrawn',
+  SAVED: 'SAVED',
+  APPLIED: 'APPLIED',
+  ONLINE_ASSESSMENT: 'ONLINE ASSESSMENT',
+  INTERVIEW: 'INTERVIEW',
+  OFFER: 'OFFER',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
 }
+
+const statuses = Object.keys(statusLabels) as ApplicationStatus[]
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('en-NZ', {
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
   }).format(new Date(`${date}T00:00:00`))
 }
 
@@ -25,6 +26,8 @@ function App() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<ApplicationStatus | 'ALL'>('ALL')
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true)
@@ -56,19 +59,69 @@ function App() {
     return () => controller.abort()
   }, [loadApplications])
 
+  const filteredApplications = useMemo(() => {
+    const term = search.trim().toLowerCase()
+
+    return applications.filter((application) => {
+      const matchesStatus = status === 'ALL' || application.status === status
+      const matchesSearch =
+        !term ||
+        [
+          application.company,
+          application.role,
+          application.location,
+          application.notes,
+        ].some((value) => value.toLowerCase().includes(term))
+
+      return matchesStatus && matchesSearch
+    })
+  }, [applications, search, status])
+
+  const countByStatus = (applicationStatus: ApplicationStatus) =>
+    applications.filter((application) => application.status === applicationStatus)
+      .length
+
   return (
-    <main className="app-shell">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Job Tracker</p>
-          <h1>Applications</h1>
-          <p className="subtitle">Keep every opportunity in one clear view.</p>
-        </div>
-        <div className="application-count" aria-label="Application count">
-          <strong>{applications.length}</strong>
-          <span>{applications.length === 1 ? 'application' : 'applications'}</span>
-        </div>
+    <main className="tracker">
+      <header className="tracker-header">
+        <h1>JobTracker</h1>
+        <button type="button">+ Add Application</button>
       </header>
+
+      <section className="summary" aria-label="Application summary">
+        <span>{applications.length} Total</span>
+        <span>{countByStatus('APPLIED')} Applied</span>
+        <span>{countByStatus('INTERVIEW')} Interview</span>
+        <span>{countByStatus('OFFER')} Offer</span>
+      </section>
+
+      <section className="filters" aria-label="Application filters">
+        <label>
+          <span className="sr-only">Search applications</span>
+          <input
+            type="search"
+            placeholder="Search applications..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <label className="status-filter">
+          <span>Status:</span>
+          <select
+            value={status}
+            onChange={(event) =>
+              setStatus(event.target.value as ApplicationStatus | 'ALL')
+            }
+          >
+            <option value="ALL">[ All ▼ ]</option>
+            {statuses.map((applicationStatus) => (
+              <option value={applicationStatus} key={applicationStatus}>
+                {statusLabels[applicationStatus]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
 
       {isLoading && <p className="message">Loading applications…</p>}
 
@@ -81,52 +134,21 @@ function App() {
         </div>
       )}
 
-      {!isLoading && !error && applications.length === 0 && (
-        <div className="message empty-state">
-          <h2>No applications yet</h2>
-          <p>Add an application through the API and it will appear here.</p>
-        </div>
+      {!isLoading && !error && filteredApplications.length === 0 && (
+        <p className="message">No applications found.</p>
       )}
 
-      {!isLoading && !error && applications.length > 0 && (
-        <section className="application-grid" aria-label="Job applications">
-          {applications.map((application) => (
+      {!isLoading && !error && filteredApplications.length > 0 && (
+        <section className="application-list" aria-label="Job applications">
+          {filteredApplications.map((application) => (
             <article className="application-card" key={application.id}>
-              <div className="card-heading">
-                <div>
-                  <p className="company">{application.company}</p>
-                  <h2>{application.role}</h2>
-                </div>
-                <span
-                  className={`status status-${application.status.toLowerCase()}`}
-                >
-                  {statusLabels[application.status]}
-                </span>
+              <p>{application.company}</p>
+              <p>{application.role}</p>
+              <div className="application-meta">
+                <span>{application.location || 'Not specified'}</span>
+                <span>{statusLabels[application.status]}</span>
               </div>
-
-              <dl className="application-details">
-                <div>
-                  <dt>Location</dt>
-                  <dd>{application.location || 'Not specified'}</dd>
-                </div>
-                <div>
-                  <dt>Applied</dt>
-                  <dd>{formatDate(application.dateApplied)}</dd>
-                </div>
-              </dl>
-
-              {application.notes && <p className="notes">{application.notes}</p>}
-
-              {application.jobUrl && (
-                <a
-                  className="job-link"
-                  href={application.jobUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View job posting <span aria-hidden="true">↗</span>
-                </a>
-              )}
+              <p>Applied {formatDate(application.dateApplied)}</p>
             </article>
           ))}
         </section>
