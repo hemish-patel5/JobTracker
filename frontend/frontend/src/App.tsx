@@ -6,7 +6,9 @@ import {
   type NewJobApplication,
   updateApplication,
 } from './api/applications'
+import { getGmailMessages } from './api/gmail'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
+import type { GmailMessage } from './types/gmailMessage'
 import './App.css'
 
 const statusLabels: Record<ApplicationStatus, string> = {
@@ -81,6 +83,9 @@ function App() {
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [gmailConnected, setGmailConnected] = useState(false)
+  const [gmailMessages, setGmailMessages] = useState<GmailMessage[]>([])
+  const [gmailLoading, setGmailLoading] = useState(true)
+  const [gmailError, setGmailError] = useState<string | null>(null)
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -107,6 +112,29 @@ function App() {
     setError(null)
     void loadApplications()
   }
+
+  const loadGmailMessages = useCallback(async (signal?: AbortSignal) => {
+    setGmailLoading(true)
+    setGmailError(null)
+
+    try {
+      setGmailMessages(await getGmailMessages(signal))
+    } catch (requestError) {
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') {
+        return
+      }
+
+      setGmailError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load Gmail messages',
+      )
+    } finally {
+      if (!signal?.aborted) {
+        setGmailLoading(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -135,6 +163,15 @@ function App() {
 
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    // Gmail synchronization is the external operation performed by this effect.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void loadGmailMessages(controller.signal)
+
+    return () => controller.abort()
+  }, [loadGmailMessages])
 
   const filteredApplications = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -367,6 +404,39 @@ function App() {
           ))}
         </section>
       )}
+
+      <section className="gmail-message-section" aria-label="Gmail messages">
+        <div className="section-heading">
+          <h2>Job Emails</h2>
+          <button type="button" onClick={() => void loadGmailMessages()}>
+            Refresh
+          </button>
+        </div>
+
+        {gmailLoading && <p className="message">Loading Gmail messages...</p>}
+
+        {!gmailLoading && gmailError && (
+          <div className="message error-message" role="alert">
+            <span>{gmailError}</span>
+            <button type="button" onClick={() => void loadGmailMessages()}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!gmailLoading && !gmailError && gmailMessages.length === 0 && (
+          <p className="message">No job-related Gmail messages found.</p>
+        )}
+
+        {!gmailLoading && !gmailError && gmailMessages.map((message) => (
+          <article className="gmail-message" key={message.id}>
+            <p className="gmail-subject">{message.subject || '(No subject)'}</p>
+            <p>From: {message.from || 'Unknown sender'}</p>
+            <p>{message.snippet || 'No message preview available.'}</p>
+            <p className="gmail-id">Gmail ID: {message.id}</p>
+          </article>
+        ))}
+      </section>
 
       {isFormOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={closeForm}>

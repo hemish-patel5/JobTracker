@@ -11,9 +11,8 @@ import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GmailService {
@@ -39,9 +38,7 @@ public class GmailService {
                 authService.getCredential();
 
         if (credential == null) {
-            throw new IllegalStateException(
-                    "Gmail is not connected"
-            );
+            return getSavedJobMessages();
         }
 
         Gmail gmail =
@@ -66,11 +63,8 @@ public class GmailService {
                         .execute();
 
         if (response.getMessages() == null) {
-            return Collections.emptyList();
+            return getSavedJobMessages();
         }
-
-        List<GmailMessageDto> messages =
-                new ArrayList<>();
 
         for (Message messageReference :
                 response.getMessages()) {
@@ -78,8 +72,14 @@ public class GmailService {
             String gmailMessageId =
                     messageReference.getId();
 
-            if (processedMessageRepository
-                    .existsById(gmailMessageId)) {
+            Optional<ProcessedGmailMessage> processedMessage =
+                    processedMessageRepository.findById(
+                            gmailMessageId
+                    );
+
+            if (processedMessage.isPresent() &&
+                    processedMessage.get()
+                            .hasMessageData()) {
                 continue;
             }
 
@@ -107,20 +107,39 @@ public class GmailService {
                             message.getSnippet()
                     );
 
-            if (jobEmailDetector.isJobRelated(
-                    gmailMessage
-            )) {
-                messages.add(gmailMessage);
-            }
+            boolean jobRelated =
+                    jobEmailDetector.isJobRelated(
+                            gmailMessage
+                    );
 
             processedMessageRepository.save(
                     new ProcessedGmailMessage(
-                            gmailMessageId
+                            gmailMessageId,
+                            gmailMessage.from(),
+                            gmailMessage.subject(),
+                            gmailMessage.snippet(),
+                            jobRelated
                     )
             );
         }
 
-        return messages;
+        return getSavedJobMessages();
+    }
+
+    private List<GmailMessageDto> getSavedJobMessages() {
+
+        return processedMessageRepository
+                .findByJobRelatedTrueOrderByProcessedAtDesc()
+                .stream()
+                .map(message ->
+                        new GmailMessageDto(
+                                message.getGmailMessageId(),
+                                message.getSender(),
+                                message.getSubject(),
+                                message.getSnippet()
+                        )
+                )
+                .toList();
     }
 
     private String getHeader(

@@ -14,6 +14,8 @@
 .summary,
 .filters,
 .application-card,
+.section-heading,
+.gmail-message,
 .message {
   border-bottom: 1px solid #777;
 }
@@ -188,6 +190,55 @@
   border: 1px solid #aaa;
   background: #e5e5e5;
   text-align: left;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  color: #fff;
+  background: linear-gradient(#666, #333);
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.section-heading button {
+  padding: 3px 8px;
+  border: 1px outset #ddd;
+  border-radius: 0;
+  background: #ddd;
+  cursor: pointer;
+  font: inherit;
+}
+
+.gmail-message {
+  padding: 12px;
+  background: #fff;
+}
+
+.gmail-message:nth-child(even) {
+  background: #f3f3f3;
+}
+
+.gmail-message p {
+  margin: 0 0 6px;
+}
+
+.gmail-message p:last-child {
+  margin-bottom: 0;
+}
+
+.gmail-subject {
+  font-weight: 700;
+}
+
+.gmail-id {
+  color: #555;
+  font-size: 10px;
 }
 
 .message {
