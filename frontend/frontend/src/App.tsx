@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createApplication,
+  deleteApplication,
   getApplications,
   type NewJobApplication,
+  updateApplication,
 } from './api/applications'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import './App.css'
@@ -43,6 +45,9 @@ function App() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<ApplicationStatus | 'ALL'>('ALL')
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingApplicationId, setEditingApplicationId] = useState<number | null>(
+    null,
+  )
   const [newApplication, setNewApplication] =
     useState<NewJobApplication>(emptyApplication)
   const [isSaving, setIsSaving] = useState(false)
@@ -116,6 +121,30 @@ function App() {
     if (isSaving) return
     setIsFormOpen(false)
     setFormError(null)
+    setEditingApplicationId(null)
+    setNewApplication(emptyApplication)
+  }
+
+  const openAddForm = () => {
+    setEditingApplicationId(null)
+    setNewApplication(emptyApplication)
+    setFormError(null)
+    setIsFormOpen(true)
+  }
+
+  const openEditForm = (application: JobApplication) => {
+    setEditingApplicationId(application.id)
+    setNewApplication({
+      company: application.company,
+      role: application.role,
+      location: application.location,
+      status: application.status,
+      dateApplied: application.dateApplied,
+      jobUrl: application.jobUrl,
+      notes: application.notes,
+    })
+    setFormError(null)
+    setIsFormOpen(true)
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -124,9 +153,25 @@ function App() {
     setFormError(null)
 
     try {
-      const createdApplication = await createApplication(newApplication)
-      setApplications((current) => [...current, createdApplication])
+      if (editingApplicationId === null) {
+        const createdApplication = await createApplication(newApplication)
+        setApplications((current) => [...current, createdApplication])
+      } else {
+        const updatedApplication = await updateApplication(
+          editingApplicationId,
+          newApplication,
+        )
+        setApplications((current) =>
+          current.map((application) =>
+            application.id === editingApplicationId
+              ? updatedApplication
+              : application,
+          ),
+        )
+      }
+
       setNewApplication(emptyApplication)
+      setEditingApplicationId(null)
       setIsFormOpen(false)
     } catch (requestError) {
       setFormError(
@@ -139,11 +184,32 @@ function App() {
     }
   }
 
+  const handleDelete = async (application: JobApplication) => {
+    const confirmed = window.confirm(
+      `Delete ${application.company} - ${application.role}?`,
+    )
+
+    if (!confirmed) return
+
+    try {
+      await deleteApplication(application.id)
+      setApplications((current) =>
+        current.filter((item) => item.id !== application.id),
+      )
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to delete application',
+      )
+    }
+  }
+
   return (
     <main className="tracker">
       <header className="tracker-header">
-        <h1>JobTracker</h1>
-        <button type="button" onClick={() => setIsFormOpen(true)}>
+        <h1>BetterTracker</h1>
+        <button type="button" onClick={openAddForm}>
           + Add Application
         </button>
       </header>
@@ -183,7 +249,7 @@ function App() {
         </label>
       </section>
 
-      {isLoading && <p className="message">Loading applications…</p>}
+      {isLoading && <p className="message">Loading applications...</p>}
 
       {error && (
         <div className="message error-message" role="alert">
@@ -209,6 +275,17 @@ function App() {
                 <span>{statusLabels[application.status]}</span>
               </div>
               <p>Applied {formatDate(application.dateApplied)}</p>
+              <div className="application-actions">
+                <button type="button" onClick={() => openEditForm(application)}>
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDelete(application)}
+                >
+                  Delete
+                </button>
+              </div>
             </article>
           ))}
         </section>
@@ -223,7 +300,11 @@ function App() {
             aria-labelledby="application-form-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <h2 id="application-form-title">Add Application</h2>
+            <h2 id="application-form-title">
+              {editingApplicationId === null
+                ? 'Add Application'
+                : 'Edit Application'}
+            </h2>
             <form onSubmit={handleSubmit}>
               <label>
                 Company
@@ -299,7 +380,11 @@ function App() {
                   Cancel
                 </button>
                 <button type="submit" disabled={isSaving}>
-                  {isSaving ? 'Adding...' : 'Add Application'}
+                  {isSaving
+                    ? 'Saving...'
+                    : editingApplicationId === null
+                      ? 'Add Application'
+                      : 'Save Changes'}
                 </button>
               </div>
             </form>
