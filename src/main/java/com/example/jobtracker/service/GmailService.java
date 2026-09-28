@@ -1,6 +1,8 @@
 package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
+import com.example.jobtracker.model.ProcessedGmailMessage;
+import com.example.jobtracker.repository.ProcessedGmailMessageRepository;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -17,11 +19,17 @@ import java.util.List;
 public class GmailService {
 
     private final GmailAuthService authService;
+    private final ProcessedGmailMessageRepository processedMessageRepository;
+    private final JobEmailDetector jobEmailDetector;
 
     public GmailService(
-            GmailAuthService authService
+            GmailAuthService authService,
+            ProcessedGmailMessageRepository processedMessageRepository,
+            JobEmailDetector jobEmailDetector
     ) {
         this.authService = authService;
+        this.processedMessageRepository = processedMessageRepository;
+        this.jobEmailDetector = jobEmailDetector;
     }
 
     public List<GmailMessageDto> getRecentMessages()
@@ -67,12 +75,20 @@ public class GmailService {
         for (Message messageReference :
                 response.getMessages()) {
 
+            String gmailMessageId =
+                    messageReference.getId();
+
+            if (processedMessageRepository
+                    .existsById(gmailMessageId)) {
+                continue;
+            }
+
             Message message =
                     gmail.users()
                             .messages()
                             .get(
                                     "me",
-                                    messageReference.getId()
+                                    gmailMessageId
                             )
                             .setFormat("metadata")
                             .setMetadataHeaders(
@@ -83,12 +99,23 @@ public class GmailService {
                             )
                             .execute();
 
-            messages.add(
+            GmailMessageDto gmailMessage =
                     new GmailMessageDto(
                             message.getId(),
                             getHeader(message, "From"),
                             getHeader(message, "Subject"),
                             message.getSnippet()
+                    );
+
+            if (jobEmailDetector.isJobRelated(
+                    gmailMessage
+            )) {
+                messages.add(gmailMessage);
+            }
+
+            processedMessageRepository.save(
+                    new ProcessedGmailMessage(
+                            gmailMessageId
                     )
             );
         }
