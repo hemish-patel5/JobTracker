@@ -98,6 +98,13 @@ public class GmailAuthService {
         return getCredential() != null;
     }
 
+    public void disconnect()
+            throws IOException {
+
+        flow.getCredentialDataStore()
+                .delete(USER_KEY);
+    }
+
     public Gmail getGmailClient()
             throws IOException {
 

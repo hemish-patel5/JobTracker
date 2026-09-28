@@ -1,6 +1,7 @@
 package com.example.jobtracker.controller;
 
 import com.example.jobtracker.service.GmailAuthService;
+import com.example.jobtracker.service.GmailService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -15,14 +16,28 @@ import java.util.UUID;
 public class GmailController {
 
     private final GmailAuthService gmailAuthService;
+    private final GmailService gmailService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
     public GmailController(
-            GmailAuthService gmailAuthService
+            GmailAuthService gmailAuthService,
+            GmailService gmailService
     ) {
-        this.gmailAuthService = gmailAuthService;
+        this.gmailAuthService =
+                gmailAuthService;
+
+        this.gmailService =
+                gmailService;
+    }
+
+    @GetMapping("/messages")
+    public Object getMessages()
+            throws Exception {
+
+        return gmailService
+                .getRecentMessages();
     }
 
     @GetMapping("/connect")
@@ -85,6 +100,18 @@ public class GmailController {
         return Map.of(
                 "connected",
                 gmailAuthService.isConnected()
+        );
+    }
+
+    @DeleteMapping("/disconnect")
+    public Map<String, Boolean> disconnect()
+            throws IOException {
+
+        gmailAuthService.disconnect();
+
+        return Map.of(
+                "connected",
+                false
         );
     }
 }

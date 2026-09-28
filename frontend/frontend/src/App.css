@@ -41,6 +41,18 @@
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.gmail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .tracker-header button,
 .error-message button {
   padding: 4px 8px;
@@ -55,6 +67,12 @@
 .tracker-header button:hover,
 .error-message button:hover {
   background: #eee;
+}
+
+.tracker-header button:disabled {
+  color: #777;
+  background: #bbb;
+  cursor: not-allowed;
 }
 
 .summary {

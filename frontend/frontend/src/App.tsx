@@ -38,6 +38,34 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T00:00:00`))
 }
 
+function connectGmail() {
+  window.location.href = 'http://localhost:8080/api/gmail/connect'
+}
+
+async function disconnectGmail() {
+  const response = await fetch(
+    'http://localhost:8080/api/gmail/disconnect',
+    { method: 'DELETE' },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Unable to log out of Gmail (${response.status})`)
+  }
+}
+
+async function isGmailConnected(signal?: AbortSignal) {
+  const response = await fetch('http://localhost:8080/api/gmail/status', {
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error(`Unable to check Gmail status (${response.status})`)
+  }
+
+  const result = (await response.json()) as { connected: boolean }
+  return result.connected
+}
+
 function App() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -52,6 +80,7 @@ function App() {
     useState<NewJobApplication>(emptyApplication)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [gmailConnected, setGmailConnected] = useState(false)
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -87,6 +116,25 @@ function App() {
 
     return () => controller.abort()
   }, [loadApplications])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    void isGmailConnected(controller.signal)
+      .then(setGmailConnected)
+      .catch((requestError: unknown) => {
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === 'AbortError'
+        ) {
+          return
+        }
+
+        console.error(requestError)
+      })
+
+    return () => controller.abort()
+  }, [])
 
   const filteredApplications = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -205,13 +253,42 @@ function App() {
     }
   }
 
+  const handleGmailLogout = async () => {
+    try {
+      await disconnectGmail()
+      setGmailConnected(false)
+      window.alert('Gmail disconnected')
+    } catch (requestError) {
+      window.alert(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to log out of Gmail',
+      )
+    }
+  }
+
   return (
     <main className="tracker">
       <header className="tracker-header">
         <h1>BetterTracker</h1>
-        <button type="button" onClick={openAddForm}>
-          + Add Application
-        </button>
+        <div className="header-actions">
+          <button type="button" onClick={openAddForm}>
+            + Add Application
+          </button>
+          <div className="gmail-actions">
+            <button
+              type="button"
+              onClick={connectGmail}
+              disabled={gmailConnected}
+              title={gmailConnected ? 'Gmail is already connected' : undefined}
+            >
+              Log In
+            </button>
+            <button type="button" onClick={() => void handleGmailLogout()}>
+              Log Out
+            </button>
+          </div>
+        </div>
       </header>
 
       <section className="summary" aria-label="Application summary">
