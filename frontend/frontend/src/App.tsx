@@ -461,7 +461,13 @@ function App() {
           {!gmailLoading && !gmailError && gmailMessages.map((message) => (
             <article className="gmail-message" key={message.id}>
               <p className="gmail-subject">
-                {message.subject || '(No subject)'}
+                <a
+                  href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {message.subject || '(No subject)'}
+                </a>
               </p>
               <p>From: {message.from || 'Unknown sender'}</p>
               <p>{message.snippet || 'No message preview available.'}</p>

@@ -10,6 +10,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -102,9 +103,9 @@ public class GmailService {
             GmailMessageDto gmailMessage =
                     new GmailMessageDto(
                             message.getId(),
-                            getHeader(message, "From"),
-                            getHeader(message, "Subject"),
-                            message.getSnippet()
+                            decodeHtml(getHeader(message, "From")),
+                            decodeHtml(getHeader(message, "Subject")),
+                            decodeHtml(message.getSnippet())
                     );
 
             boolean jobRelated =
@@ -134,12 +135,19 @@ public class GmailService {
                 .map(message ->
                         new GmailMessageDto(
                                 message.getGmailMessageId(),
-                                message.getSender(),
-                                message.getSubject(),
-                                message.getSnippet()
+                                decodeHtml(message.getSender()),
+                                decodeHtml(message.getSubject()),
+                                decodeHtml(message.getSnippet())
                         )
                 )
                 .toList();
+    }
+
+    private String decodeHtml(String value) {
+
+        return value == null
+                ? ""
+                : HtmlUtils.htmlUnescape(value);
     }
 
     private String getHeader(

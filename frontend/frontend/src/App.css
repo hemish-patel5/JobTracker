@@ -255,6 +255,11 @@
   font-weight: 700;
 }
 
+.gmail-subject a,
+.gmail-subject a:visited {
+  color: #111;
+}
+
 .gmail-id {
   color: #555;
   font-size: 10px;
