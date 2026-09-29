@@ -4,4 +4,5 @@ export interface GmailMessage {
   subject: string
   snippet: string
   receivedAt: number | null
+  outcome: 'SUCCESS' | 'REJECTION'
 }

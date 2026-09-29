@@ -28,6 +28,11 @@ public class ProcessedGmailMessage {
 
     private Boolean updateRelated;
 
+    @Enumerated(EnumType.STRING)
+    private EmailOutcome outcome;
+
+    private Boolean fullBodyClassified;
+
     public ProcessedGmailMessage() {
     }
 
@@ -44,7 +49,9 @@ public class ProcessedGmailMessage {
             boolean jobRelated,
             Long receivedAt,
             boolean allowedCategory,
-            boolean updateRelated
+            boolean updateRelated,
+            EmailOutcome outcome,
+            boolean fullBodyClassified
     ) {
         this.gmailMessageId = gmailMessageId;
         this.processedAt = LocalDateTime.now();
@@ -55,6 +62,8 @@ public class ProcessedGmailMessage {
         this.receivedAt = receivedAt;
         this.allowedCategory = allowedCategory;
         this.updateRelated = updateRelated;
+        this.outcome = outcome;
+        this.fullBodyClassified = fullBodyClassified;
     }
 
     public String getGmailMessageId() {
@@ -93,10 +102,24 @@ public class ProcessedGmailMessage {
         return updateRelated;
     }
 
+    public EmailOutcome getOutcome() {
+        return outcome;
+    }
+
+    public void setOutcome(EmailOutcome outcome) {
+        this.outcome = outcome;
+    }
+
+    public Boolean getFullBodyClassified() {
+        return fullBodyClassified;
+    }
+
     public boolean hasMessageData() {
         return jobRelated != null &&
                 receivedAt != null &&
                 allowedCategory != null &&
-                updateRelated != null;
+                updateRelated != null &&
+                outcome != null &&
+                Boolean.TRUE.equals(fullBodyClassified);
     }
 }

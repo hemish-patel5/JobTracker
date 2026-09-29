@@ -2,6 +2,7 @@ package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
 import com.example.jobtracker.model.ApplicationStatus;
+import com.example.jobtracker.model.EmailOutcome;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,6 +18,12 @@ public class JobEmailClassifier {
                 email.subject() + " " +
                 email.snippet()
         ).toLowerCase();
+
+        if (isRejection(text)) {
+            return Optional.of(
+                    ApplicationStatus.REJECTED
+            );
+        }
 
         if (
                 text.contains("interview invitation") ||
@@ -51,18 +58,45 @@ public class JobEmailClassifier {
             );
         }
 
-        if (
-                text.contains("unfortunately") ||
+        return Optional.empty();
+    }
+
+    public EmailOutcome detectOutcome(
+            GmailMessageDto email
+    ) {
+
+        return detectOutcome(
+                email.subject(),
+                email.snippet()
+        );
+    }
+
+    public EmailOutcome detectOutcome(
+            String subject,
+            String fullBody
+    ) {
+
+        String text = (
+                subject + " " +
+                fullBody
+        ).toLowerCase();
+
+        return isRejection(text)
+                ? EmailOutcome.REJECTION
+                : EmailOutcome.SUCCESS;
+    }
+
+    private boolean isRejection(String text) {
+
+        return text.contains("unfortunately") ||
                 text.contains("not progressing") ||
                 text.contains("not be progressing") ||
                 text.contains("other candidates") ||
-                text.contains("unsuccessful")
-        ) {
-            return Optional.of(
-                    ApplicationStatus.REJECTED
-            );
-        }
+                text.contains("not be moving forward") ||
+                text.contains("haven't been") ||
+                text.contains("unsuccessful") ||
 
-        return Optional.empty();
+                text.contains("closed");
+                
     }
 }

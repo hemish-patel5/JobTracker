@@ -1,16 +1,20 @@
 package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
+import com.example.jobtracker.model.EmailOutcome;
 import com.example.jobtracker.model.ProcessedGmailMessage;
 import com.example.jobtracker.repository.ProcessedGmailMessageRepository;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.MessagePart;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class GmailService {
@@ -29,17 +33,20 @@ public class GmailService {
     private final ProcessedGmailMessageRepository processedMessageRepository;
     private final JobEmailDetector jobEmailDetector;
     private final UpdateEmailDetector updateEmailDetector;
+    private final JobEmailClassifier jobEmailClassifier;
 
     public GmailService(
             GmailAuthService authService,
             ProcessedGmailMessageRepository processedMessageRepository,
             JobEmailDetector jobEmailDetector,
-            UpdateEmailDetector updateEmailDetector
+            UpdateEmailDetector updateEmailDetector,
+            JobEmailClassifier jobEmailClassifier
     ) {
         this.authService = authService;
         this.processedMessageRepository = processedMessageRepository;
         this.jobEmailDetector = jobEmailDetector;
         this.updateEmailDetector = updateEmailDetector;
+        this.jobEmailClassifier = jobEmailClassifier;
     }
 
     public List<GmailMessageDto> getRecentMessages()
@@ -58,7 +65,7 @@ public class GmailService {
         return getSavedUpdateMessages();
     }
 
-    private void syncMessages(String query)
+    private synchronized void syncMessages(String query)
             throws Exception {
 
         if (authService.getCredential() == null) {
@@ -103,13 +110,7 @@ public class GmailService {
                                     "me",
                                     gmailMessageId
                             )
-                            .setFormat("metadata")
-                            .setMetadataHeaders(
-                                    List.of(
-                                            "From",
-                                            "Subject"
-                                    )
-                            )
+                            .setFormat("full")
                             .execute();
 
             GmailMessageDto gmailMessage =
@@ -118,7 +119,8 @@ public class GmailService {
                             decodeHtml(getHeader(message, "From")),
                             decodeHtml(getHeader(message, "Subject")),
                             decodeHtml(message.getSnippet()),
-                            message.getInternalDate()
+                            message.getInternalDate(),
+                            null
                     );
 
             boolean jobRelated =
@@ -131,6 +133,12 @@ public class GmailService {
                             gmailMessage
                     );
 
+            EmailOutcome outcome =
+                    jobEmailClassifier.detectOutcome(
+                            gmailMessage.subject(),
+                            extractFullBody(message.getPayload())
+                    );
+
             processedMessageRepository.save(
                     new ProcessedGmailMessage(
                             gmailMessageId,
@@ -140,7 +148,9 @@ public class GmailService {
                             jobRelated,
                             gmailMessage.receivedAt(),
                             true,
-                            updateRelated
+                            updateRelated,
+                            outcome,
+                            true
                     )
             );
         }
@@ -152,15 +162,7 @@ public class GmailService {
         return processedMessageRepository
                 .findByJobRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc()
                 .stream()
-                .map(message ->
-                        new GmailMessageDto(
-                                message.getGmailMessageId(),
-                                decodeHtml(message.getSender()),
-                                decodeHtml(message.getSubject()),
-                                decodeHtml(message.getSnippet()),
-                                message.getReceivedAt()
-                        )
-                )
+                .map(this::toDto)
                 .toList();
     }
 
@@ -177,12 +179,33 @@ public class GmailService {
             ProcessedGmailMessage message
     ) {
 
+        EmailOutcome outcome = message.getOutcome();
+
+        if (outcome == null) {
+            GmailMessageDto unclassifiedMessage =
+                    new GmailMessageDto(
+                            message.getGmailMessageId(),
+                            decodeHtml(message.getSender()),
+                            decodeHtml(message.getSubject()),
+                            decodeHtml(message.getSnippet()),
+                            message.getReceivedAt(),
+                            null
+                    );
+
+            outcome = jobEmailClassifier.detectOutcome(
+                    unclassifiedMessage
+            );
+            message.setOutcome(outcome);
+            processedMessageRepository.save(message);
+        }
+
         return new GmailMessageDto(
                 message.getGmailMessageId(),
                 decodeHtml(message.getSender()),
                 decodeHtml(message.getSubject()),
                 decodeHtml(message.getSnippet()),
-                message.getReceivedAt()
+                message.getReceivedAt(),
+                outcome
         );
     }
 
@@ -191,6 +214,47 @@ public class GmailService {
         return value == null
                 ? ""
                 : HtmlUtils.htmlUnescape(value);
+    }
+
+    private String extractFullBody(MessagePart part) {
+
+        if (part == null) {
+            return "";
+        }
+
+        StringBuilder body = new StringBuilder();
+        String mimeType = part.getMimeType();
+
+        if (mimeType != null &&
+                mimeType.startsWith("text/") &&
+                part.getBody() != null &&
+                part.getBody().getData() != null) {
+
+            try {
+                byte[] decoded = Base64.getUrlDecoder()
+                        .decode(part.getBody().getData());
+
+                body.append(
+                        decodeHtml(
+                                new String(
+                                        decoded,
+                                        StandardCharsets.UTF_8
+                                )
+                        )
+                );
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed body sections and continue with other parts.
+            }
+        }
+
+        if (part.getParts() != null) {
+            for (MessagePart childPart : part.getParts()) {
+                body.append(' ')
+                        .append(extractFullBody(childPart));
+            }
+        }
+
+        return body.toString();
     }
 
     private String getHeader(

@@ -270,6 +270,20 @@
   font-size: 10px;
 }
 
+.email-outcome {
+  padding: 2px 5px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.email-outcome-success {
+  background: #16732b;
+}
+
+.email-outcome-rejection {
+  background: #a51d1d;
+}
+
 .message {
   display: flex;
   min-height: 100px;

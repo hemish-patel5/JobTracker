@@ -96,7 +96,8 @@ function App() {
   const [formError, setFormError] = useState<string | null>(null)
   const [gmailConnected, setGmailConnected] = useState(false)
   const [gmailMessages, setGmailMessages] = useState<GmailMessage[]>([])
-  const [gmailLoading, setGmailLoading] = useState(true)
+  const [gmailLoading, setGmailLoading] = useState(false)
+  const [gmailLoaded, setGmailLoaded] = useState(false)
   const [gmailError, setGmailError] = useState<string | null>(null)
   const [emailSort, setEmailSort] = useState<'latest' | 'oldest'>('latest')
   const [updateMessages, setUpdateMessages] = useState<GmailMessage[]>([])
@@ -136,6 +137,7 @@ function App() {
 
     try {
       setGmailMessages(await getGmailMessages(signal))
+      setGmailLoaded(true)
     } catch (requestError) {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') {
         return
@@ -206,13 +208,15 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (activePage !== 'emails' || gmailLoaded) return
+
     const controller = new AbortController()
-    // Gmail synchronization is the external operation performed by this effect.
+    // Gmail synchronization starts when Job Emails is first opened.
     // oxlint-disable-next-line react/set-state-in-effect
     void loadGmailMessages(controller.signal)
 
     return () => controller.abort()
-  }, [loadGmailMessages])
+  }, [activePage, gmailLoaded, loadGmailMessages])
 
   useEffect(() => {
     if (activePage !== 'updates' || updatesLoaded) return
@@ -615,7 +619,18 @@ function App() {
               </p>
               <p>From: {message.from || 'Unknown sender'}</p>
               <p>Received: {formatEmailDate(message.receivedAt)}</p>
-              <p>{message.snippet || 'No message preview available.'}</p>
+              <p>
+                Outcome:{' '}
+                <span
+                  className={`email-outcome ${
+                    message.outcome === 'REJECTION'
+                      ? 'email-outcome-rejection'
+                      : 'email-outcome-success'
+                  }`}
+                >
+                  {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
+                </span>
+              </p>
               <p className="gmail-id">Gmail ID: {message.id}</p>
             </article>
           ))}
