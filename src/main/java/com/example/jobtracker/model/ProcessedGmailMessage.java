@@ -26,6 +26,8 @@ public class ProcessedGmailMessage {
 
     private Boolean allowedCategory;
 
+    private Boolean updateRelated;
+
     public ProcessedGmailMessage() {
     }
 
@@ -41,7 +43,8 @@ public class ProcessedGmailMessage {
             String snippet,
             boolean jobRelated,
             Long receivedAt,
-            boolean allowedCategory
+            boolean allowedCategory,
+            boolean updateRelated
     ) {
         this.gmailMessageId = gmailMessageId;
         this.processedAt = LocalDateTime.now();
@@ -51,6 +54,7 @@ public class ProcessedGmailMessage {
         this.jobRelated = jobRelated;
         this.receivedAt = receivedAt;
         this.allowedCategory = allowedCategory;
+        this.updateRelated = updateRelated;
     }
 
     public String getGmailMessageId() {
@@ -85,9 +89,14 @@ public class ProcessedGmailMessage {
         return allowedCategory;
     }
 
+    public Boolean getUpdateRelated() {
+        return updateRelated;
+    }
+
     public boolean hasMessageData() {
         return jobRelated != null &&
                 receivedAt != null &&
-                allowedCategory != null;
+                allowedCategory != null &&
+                updateRelated != null;
     }
 }

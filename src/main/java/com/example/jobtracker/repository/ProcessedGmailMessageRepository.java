@@ -10,4 +10,7 @@ public interface ProcessedGmailMessageRepository
 
     List<ProcessedGmailMessage>
     findByJobRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc();
+
+    List<ProcessedGmailMessage>
+    findByUpdateRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc();
 }

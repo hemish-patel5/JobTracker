@@ -40,6 +40,14 @@ public class GmailController {
                 .getRecentMessages();
     }
 
+    @GetMapping("/updates")
+    public Object getUpdates()
+            throws Exception {
+
+        return gmailService
+                .getUpdateMessages();
+    }
+
     @GetMapping("/connect")
     public RedirectView connect(
             HttpSession session

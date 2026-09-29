@@ -3,9 +3,6 @@ package com.example.jobtracker.service;
 import com.example.jobtracker.dto.GmailMessageDto;
 import com.example.jobtracker.model.ProcessedGmailMessage;
 import com.example.jobtracker.repository.ProcessedGmailMessageRepository;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
@@ -23,53 +20,63 @@ public class GmailService {
             "{category:primary category:updates} " +
             JobEmailKeywords.asGmailSearchGroup();
 
+    private static final String UPDATE_EMAIL_QUERY =
+            "in:inbox newer_than:90d " +
+            "{category:primary category:updates} " +
+            "{update \"next stage\"}";
+
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;
     private final JobEmailDetector jobEmailDetector;
+    private final UpdateEmailDetector updateEmailDetector;
 
     public GmailService(
             GmailAuthService authService,
             ProcessedGmailMessageRepository processedMessageRepository,
-            JobEmailDetector jobEmailDetector
+            JobEmailDetector jobEmailDetector,
+            UpdateEmailDetector updateEmailDetector
     ) {
         this.authService = authService;
         this.processedMessageRepository = processedMessageRepository;
         this.jobEmailDetector = jobEmailDetector;
+        this.updateEmailDetector = updateEmailDetector;
     }
 
     public List<GmailMessageDto> getRecentMessages()
             throws Exception {
 
-        Credential credential =
-                authService.getCredential();
+        syncMessages(JOB_EMAIL_QUERY);
 
-        if (credential == null) {
-            return getSavedJobMessages();
+        return getSavedJobMessages();
+    }
+
+    public List<GmailMessageDto> getUpdateMessages()
+            throws Exception {
+
+        syncMessages(UPDATE_EMAIL_QUERY);
+
+        return getSavedUpdateMessages();
+    }
+
+    private void syncMessages(String query)
+            throws Exception {
+
+        if (authService.getCredential() == null) {
+            return;
         }
 
-        Gmail gmail =
-                new Gmail.Builder(
-                        GoogleNetHttpTransport
-                                .newTrustedTransport(),
-                        GsonFactory
-                                .getDefaultInstance(),
-                        credential
-                )
-                        .setApplicationName(
-                                "JobTracker"
-                        )
-                        .build();
+        Gmail gmail = authService.getGmailClient();
 
         ListMessagesResponse response =
                 gmail.users()
                         .messages()
                         .list("me")
-                        .setQ(JOB_EMAIL_QUERY)
+                        .setQ(query)
                         .setMaxResults(100L)
                         .execute();
 
         if (response.getMessages() == null) {
-            return getSavedJobMessages();
+            return;
         }
 
         for (Message messageReference :
@@ -119,6 +126,11 @@ public class GmailService {
                             gmailMessage
                     );
 
+            boolean updateRelated =
+                    updateEmailDetector.isUpdateRelated(
+                            gmailMessage
+                    );
+
             processedMessageRepository.save(
                     new ProcessedGmailMessage(
                             gmailMessageId,
@@ -127,12 +139,12 @@ public class GmailService {
                             gmailMessage.snippet(),
                             jobRelated,
                             gmailMessage.receivedAt(),
-                            true
+                            true,
+                            updateRelated
                     )
             );
         }
 
-        return getSavedJobMessages();
     }
 
     private List<GmailMessageDto> getSavedJobMessages() {
@@ -150,6 +162,28 @@ public class GmailService {
                         )
                 )
                 .toList();
+    }
+
+    private List<GmailMessageDto> getSavedUpdateMessages() {
+
+        return processedMessageRepository
+                .findByUpdateRelatedTrueAndAllowedCategoryTrueOrderByProcessedAtDesc()
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    private GmailMessageDto toDto(
+            ProcessedGmailMessage message
+    ) {
+
+        return new GmailMessageDto(
+                message.getGmailMessageId(),
+                decodeHtml(message.getSender()),
+                decodeHtml(message.getSubject()),
+                decodeHtml(message.getSnippet()),
+                message.getReceivedAt()
+        );
     }
 
     private String decodeHtml(String value) {

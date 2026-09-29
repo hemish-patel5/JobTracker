@@ -6,7 +6,7 @@ import {
   type NewJobApplication,
   updateApplication,
 } from './api/applications'
-import { getGmailMessages } from './api/gmail'
+import { getGmailMessages, getUpdateMessages } from './api/gmail'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import type { GmailMessage } from './types/gmailMessage'
 import './App.css'
@@ -78,9 +78,9 @@ async function isGmailConnected(signal?: AbortSignal) {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<'applications' | 'emails'>(
-    'applications',
-  )
+  const [activePage, setActivePage] = useState<
+    'applications' | 'emails' | 'updates'
+  >('applications')
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -99,6 +99,10 @@ function App() {
   const [gmailLoading, setGmailLoading] = useState(true)
   const [gmailError, setGmailError] = useState<string | null>(null)
   const [emailSort, setEmailSort] = useState<'latest' | 'oldest'>('latest')
+  const [updateMessages, setUpdateMessages] = useState<GmailMessage[]>([])
+  const [updatesLoading, setUpdatesLoading] = useState(false)
+  const [updatesLoaded, setUpdatesLoaded] = useState(false)
+  const [updatesError, setUpdatesError] = useState<string | null>(null)
 
   const loadApplications = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -149,6 +153,30 @@ function App() {
     }
   }, [])
 
+  const loadUpdateMessages = useCallback(async (signal?: AbortSignal) => {
+    setUpdatesLoading(true)
+    setUpdatesError(null)
+
+    try {
+      setUpdateMessages(await getUpdateMessages(signal))
+      setUpdatesLoaded(true)
+    } catch (requestError) {
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') {
+        return
+      }
+
+      setUpdatesError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load update emails',
+      )
+    } finally {
+      if (!signal?.aborted) {
+        setUpdatesLoading(false)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     const controller = new AbortController()
     // Fetching API data is the external synchronization performed by this effect.
@@ -186,6 +214,17 @@ function App() {
     return () => controller.abort()
   }, [loadGmailMessages])
 
+  useEffect(() => {
+    if (activePage !== 'updates' || updatesLoaded) return
+
+    const controller = new AbortController()
+    // Update synchronization starts when the Updates screen is first opened.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void loadUpdateMessages(controller.signal)
+
+    return () => controller.abort()
+  }, [activePage, loadUpdateMessages, updatesLoaded])
+
   const filteredApplications = useMemo(() => {
     const term = search.trim().toLowerCase()
 
@@ -211,6 +250,15 @@ function App() {
         : (first.receivedAt ?? 0) - (second.receivedAt ?? 0),
     ),
     [emailSort, gmailMessages],
+  )
+
+  const sortedUpdateMessages = useMemo(
+    () => [...updateMessages].sort((first, second) =>
+      emailSort === 'latest'
+        ? (second.receivedAt ?? 0) - (first.receivedAt ?? 0)
+        : (first.receivedAt ?? 0) - (second.receivedAt ?? 0),
+    ),
+    [emailSort, updateMessages],
   )
 
   const countByStatus = (applicationStatus: ApplicationStatus) =>
@@ -347,6 +395,14 @@ function App() {
               onClick={() => setActivePage('emails')}
             >
               Job Emails
+            </button>
+            <button
+              type="button"
+              className={activePage === 'updates' ? 'active' : undefined}
+              aria-pressed={activePage === 'updates'}
+              onClick={() => setActivePage('updates')}
+            >
+              Updates
             </button>
           </nav>
         </div>
@@ -490,6 +546,63 @@ function App() {
           )}
 
           {!gmailLoading && !gmailError && sortedGmailMessages.map((message) => (
+            <article className="gmail-message" key={message.id}>
+              <p className="gmail-subject">
+                <a
+                  href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {message.subject || '(No subject)'}
+                </a>
+              </p>
+              <p>From: {message.from || 'Unknown sender'}</p>
+              <p>Received: {formatEmailDate(message.receivedAt)}</p>
+              <p>{message.snippet || 'No message preview available.'}</p>
+              <p className="gmail-id">Gmail ID: {message.id}</p>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {activePage === 'updates' && (
+        <section className="gmail-message-section" aria-label="Update emails">
+          <div className="section-heading">
+            <h2>Updates</h2>
+            <div className="email-controls">
+              <button
+                type="button"
+                onClick={() =>
+                  setEmailSort((current) =>
+                    current === 'latest' ? 'oldest' : 'latest',
+                  )
+                }
+              >
+                Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
+              </button>
+              <button type="button" onClick={() => void loadUpdateMessages()}>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {updatesLoading && <p className="message">Loading updates...</p>}
+
+          {!updatesLoading && updatesError && (
+            <div className="message error-message" role="alert">
+              <span>{updatesError}</span>
+              <button type="button" onClick={() => void loadUpdateMessages()}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!updatesLoading && !updatesError && updatesLoaded &&
+            updateMessages.length === 0 && (
+              <p className="message">No update emails found.</p>
+            )}
+
+          {!updatesLoading && !updatesError && sortedUpdateMessages.map((message) => (
             <article className="gmail-message" key={message.id}>
               <p className="gmail-subject">
                 <a
