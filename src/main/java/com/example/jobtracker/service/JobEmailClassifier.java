@@ -94,9 +94,6 @@ public class JobEmailClassifier {
                 text.contains("other candidates") ||
                 text.contains("not be moving forward") ||
                 text.contains("haven't been") ||
-                text.contains("unsuccessful") ||
-
-                text.contains("closed");
-                
+                text.contains("unsuccessful");
     }
 }
