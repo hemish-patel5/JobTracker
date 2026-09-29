@@ -23,7 +23,7 @@ public class GmailService {
     private static final String UPDATE_EMAIL_QUERY =
             "in:inbox newer_than:90d " +
             "{category:primary category:updates} " +
-            "{update \"next stage\"}";
+            "update application";
 
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;

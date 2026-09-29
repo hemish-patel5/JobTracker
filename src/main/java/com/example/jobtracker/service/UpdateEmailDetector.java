@@ -10,7 +10,7 @@ public class UpdateEmailDetector {
 
     public static final List<String> KEYWORDS = List.of(
             "update",
-            "next stage"
+            "application"
     );
 
     public boolean isUpdateRelated(GmailMessageDto email) {
@@ -22,6 +22,6 @@ public class UpdateEmailDetector {
         ).toLowerCase();
 
         return KEYWORDS.stream()
-                .anyMatch(text::contains);
+                .allMatch(text::contains);
     }
 }
