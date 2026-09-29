@@ -5,7 +5,6 @@ set -u
 PROJECT_DIR="/home/hemish/Desktop/JavaProjects/JobTracker"
 FRONTEND_DIR="$PROJECT_DIR/frontend/frontend"
 FRONTEND_URL="http://localhost:5173"
-BACKEND_URL="http://localhost:8080"
 BACKEND_PID=""
 FRONTEND_PID=""
 
@@ -14,6 +13,7 @@ port_is_open() {
 }
 
 cleanup() {
+    trap - EXIT INT TERM
     printf '\nStopping JobTracker...\n'
     if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
         kill "$FRONTEND_PID" 2>/dev/null || true
@@ -28,6 +28,18 @@ trap cleanup EXIT INT TERM
 
 printf 'Starting JobTracker locally...\n'
 
+if ! command -v npm >/dev/null 2>&1 && [[ -s /home/hemish/.nvm/nvm.sh ]]; then
+    # Desktop launchers do not always load the interactive shell configuration.
+    # Load the user's Node Version Manager explicitly so npm is available.
+    source /home/hemish/.nvm/nvm.sh
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+    printf 'Node.js/npm could not be found. Install Node.js before launching JobTracker.\n'
+    read -r -p 'Press Enter to close...'
+    exit 1
+fi
+
 if port_is_open 8080; then
     printf 'Backend is already running on port 8080.\n'
 else
@@ -37,6 +49,29 @@ else
         exec ./mvnw spring-boot:run
     ) &
     BACKEND_PID=$!
+fi
+
+printf 'Waiting for the backend'
+for _ in {1..60}; do
+    if port_is_open 8080; then
+        printf '\nBackend is ready.\n'
+        break
+    fi
+
+    if [[ -n "$BACKEND_PID" ]] && ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+        printf '\nThe backend stopped before startup completed. Check the error above.\n'
+        read -r -p 'Press Enter to close...'
+        exit 1
+    fi
+
+    printf '.'
+    sleep 1
+done
+
+if ! port_is_open 8080; then
+    printf '\nThe backend did not become ready within 60 seconds.\n'
+    read -r -p 'Press Enter to close...'
+    exit 1
 fi
 
 if port_is_open 5173; then
@@ -55,9 +90,9 @@ else
     FRONTEND_PID=$!
 fi
 
-printf 'Waiting for the website'
+printf 'Waiting for the frontend'
 for _ in {1..60}; do
-    if curl --silent --fail --max-time 1 "$FRONTEND_URL" >/dev/null 2>&1; then
+    if port_is_open 5173; then
         printf '\nOpening %s\n' "$FRONTEND_URL"
         xdg-open "$FRONTEND_URL" >/dev/null 2>&1 &
         if [[ -z "$BACKEND_PID" && -z "$FRONTEND_PID" ]]; then
