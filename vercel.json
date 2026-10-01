@@ -1,12 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm --prefix frontend/frontend run build",
-  "installCommand": "npm --prefix frontend/frontend ci",
-  "outputDirectory": "frontend/frontend/dist",
+  "services": {
+    "backend": {
+      "root": ".",
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
+    },
+    "frontend": {
+      "root": "frontend/frontend",
+      "framework": "vite"
+    }
+  },
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": {
+        "service": "frontend"
+      }
     }
   ]
 }
