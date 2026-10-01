@@ -1,7 +1,6 @@
 package com.example.jobtracker.controller;
 
 import com.example.jobtracker.service.GmailAuthService;
-import com.example.jobtracker.service.GmailUpdateResult;
 import com.example.jobtracker.service.GmailUpdateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,8 +79,8 @@ class InternalControllerTest {
 
         when(gmailAuthService.isConnected())
                 .thenReturn(true);
-        when(gmailUpdateService.checkForUpdates())
-                .thenReturn(new GmailUpdateResult(3, 1));
+        when(gmailUpdateService.startUpdateCheck())
+                .thenReturn(true);
 
         mockMvc.perform(
                         post("/api/internal/check-gmail")
@@ -90,18 +89,10 @@ class InternalControllerTest {
                                         SECRET
                                 )
                 )
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(
                         jsonPath("$.status")
-                                .value("completed")
-                )
-                .andExpect(
-                        jsonPath("$.updateEmailCount")
-                                .value(3)
-                )
-                .andExpect(
-                        jsonPath("$.notificationsSent")
-                                .value(1)
+                                .value("accepted")
                 );
     }
 }

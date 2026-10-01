@@ -1,7 +1,6 @@
 package com.example.jobtracker.controller;
 
 import com.example.jobtracker.service.GmailAuthService;
-import com.example.jobtracker.service.GmailUpdateResult;
 import com.example.jobtracker.service.GmailUpdateService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -55,17 +54,21 @@ public class InternalController {
                     ));
         }
 
-        GmailUpdateResult result =
-                gmailUpdateService.checkForUpdates();
+        boolean started =
+                gmailUpdateService.startUpdateCheck();
+
+        if (!started) {
+            return ResponseEntity.ok(Map.of(
+                    "status",
+                    "already_running"
+            ));
+        }
 
         return ResponseEntity
-                .ok(Map.of(
+                .accepted()
+                .body(Map.of(
                         "status",
-                        "completed",
-                        "updateEmailCount",
-                        result.updateEmailCount(),
-                        "notificationsSent",
-                        result.notificationsSent()
+                        "accepted"
                 ));
     }
 

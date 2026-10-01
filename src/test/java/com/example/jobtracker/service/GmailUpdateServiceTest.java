@@ -64,7 +64,8 @@ class GmailUpdateServiceTest {
                 new GmailUpdateService(
                         gmailService,
                         repository,
-                        ntfyService
+                        ntfyService,
+                        Runnable::run
                 ).checkForUpdates();
 
         verify(ntfyService)
