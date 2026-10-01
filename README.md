@@ -75,7 +75,6 @@ Use Neon's pooled hostname for normal application traffic. The Spring JDBC URL
 must start with `jdbc:postgresql://`. Add the exact deployed callback URL to the
 Google OAuth client's authorized redirect URIs.
 
-The current Gmail OAuth token is stored in the backend's local `tokens/`
-directory. Cloud Run files do not persist when an instance is replaced, so this
-must be moved to persistent storage before Gmail reconnection can survive
-restarts.
+Gmail OAuth credentials are stored in the `gmail_oauth_credentials` PostgreSQL
+table rather than Cloud Run's local filesystem. Reconnect Gmail once after the
+production deployment to populate that table in Neon.

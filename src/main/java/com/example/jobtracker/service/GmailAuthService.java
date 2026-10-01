@@ -8,13 +8,11 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -31,7 +29,8 @@ public class GmailAuthService {
     public GmailAuthService(
             @Value("${google.gmail.client-id}") String clientId,
             @Value("${google.gmail.client-secret}") String clientSecret,
-            @Value("${google.gmail.redirect-uri}") String redirectUri
+            @Value("${google.gmail.redirect-uri}") String redirectUri,
+            PostgresCredentialDataStoreFactory credentialDataStoreFactory
     ) throws Exception {
 
         this.redirectUri = redirectUri;
@@ -55,11 +54,7 @@ public class GmailAuthService {
                 List.of(GmailScopes.GMAIL_READONLY)
         )
                 .setAccessType("offline")
-                .setDataStoreFactory(
-                        new FileDataStoreFactory(
-                                new File("tokens")
-                        )
-                )
+                .setDataStoreFactory(credentialDataStoreFactory)
                 .build();
     }
 
