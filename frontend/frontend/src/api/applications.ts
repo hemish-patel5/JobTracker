@@ -1,3 +1,4 @@
+import { API_URL } from '../config'
 import type { JobApplication } from '../types/jobApplication'
 
 export type NewJobApplication = Omit<JobApplication, 'id'>
@@ -5,7 +6,7 @@ export type NewJobApplication = Omit<JobApplication, 'id'>
 export async function getApplications(
   signal?: AbortSignal,
 ): Promise<JobApplication[]> {
-  const response = await fetch('/api/applications', { signal })
+  const response = await fetch(`${API_URL}/api/applications`, { signal })
 
   if (!response.ok) {
     throw new Error(`Unable to load applications (${response.status})`)
@@ -17,7 +18,7 @@ export async function getApplications(
 export async function createApplication(
   application: NewJobApplication,
 ): Promise<JobApplication> {
-  const response = await fetch('/api/applications', {
+  const response = await fetch(`${API_URL}/api/applications`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -36,7 +37,7 @@ export async function updateApplication(
   id: number,
   application: NewJobApplication,
 ): Promise<JobApplication> {
-  const response = await fetch(`/api/applications/${id}`, {
+  const response = await fetch(`${API_URL}/api/applications/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -52,7 +53,7 @@ export async function updateApplication(
 }
 
 export async function deleteApplication(id: number): Promise<void> {
-  const response = await fetch(`/api/applications/${id}`, {
+  const response = await fetch(`${API_URL}/api/applications/${id}`, {
     method: 'DELETE',
   })
 

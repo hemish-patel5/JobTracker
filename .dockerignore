@@ -1,0 +1,10 @@
+.git
+.idea
+.env
+.neon
+.agents
+frontend
+node_modules
+target
+tokens
+*.log

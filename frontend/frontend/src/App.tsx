@@ -7,6 +7,7 @@ import {
   updateApplication,
 } from './api/applications'
 import { getGmailMessages, getUpdateMessages } from './api/gmail'
+import { API_URL } from './config'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import type { GmailMessage } from './types/gmailMessage'
 import './App.css'
@@ -50,12 +51,12 @@ function formatEmailDate(timestamp: number | null) {
 }
 
 function connectGmail() {
-  window.location.href = 'http://localhost:8080/api/gmail/connect'
+  window.location.href = `${API_URL}/api/gmail/connect`
 }
 
 async function disconnectGmail() {
   const response = await fetch(
-    'http://localhost:8080/api/gmail/disconnect',
+    `${API_URL}/api/gmail/disconnect`,
     { method: 'DELETE' },
   )
 
@@ -65,7 +66,7 @@ async function disconnectGmail() {
 }
 
 async function isGmailConnected(signal?: AbortSignal) {
-  const response = await fetch('http://localhost:8080/api/gmail/status', {
+  const response = await fetch(`${API_URL}/api/gmail/status`, {
     signal,
   })
 
