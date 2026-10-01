@@ -13,5 +13,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /workspace/target/jobtracker-0.0.1-SNAPSHOT.jar app.jar
 
-EXPOSE 8080
+# Render supplies PORT at runtime and defaults web services to port 10000.
+# This ENV also gives the container the same default when run directly.
+ENV PORT=10000
+EXPOSE 10000
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
