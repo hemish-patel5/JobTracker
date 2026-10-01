@@ -33,6 +33,8 @@ public class ProcessedGmailMessage {
 
     private Boolean fullBodyClassified;
 
+    private Boolean notificationSent;
+
     public ProcessedGmailMessage() {
     }
 
@@ -64,6 +66,7 @@ public class ProcessedGmailMessage {
         this.updateRelated = updateRelated;
         this.outcome = outcome;
         this.fullBodyClassified = fullBodyClassified;
+        this.notificationSent = false;
     }
 
     public String getGmailMessageId() {
@@ -112,6 +115,14 @@ public class ProcessedGmailMessage {
 
     public Boolean getFullBodyClassified() {
         return fullBodyClassified;
+    }
+
+    public Boolean getNotificationSent() {
+        return notificationSent;
+    }
+
+    public void markNotificationSent() {
+        this.notificationSent = true;
     }
 
     public boolean hasMessageData() {
