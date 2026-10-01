@@ -48,7 +48,7 @@ public class NtfyService {
         HttpRequest request = HttpRequest.newBuilder(topicUri)
                 .timeout(Duration.ofSeconds(20))
                 .header("Content-Type", "text/plain; charset=utf-8")
-                .header("Title", "BetterTracker application update")
+                .header("Title", "Job Update")
                 .POST(
                         HttpRequest.BodyPublishers.ofString(
                                 notificationBody,
