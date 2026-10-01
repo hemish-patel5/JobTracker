@@ -1,9 +1,8 @@
 # BetterTracker
 
-BetterTracker is a simple job-application tracker built with React, Spring Boot,
+BetterTracker is a simple job-application tracker built with Java, Spring Boot,
 and PostgreSQL. It lets you create, search, filter, edit, and delete applications.
-It can connect to Gmail and display job-related emails and application
-updates.
+It can connect to Gmail and display job-related emails and applications, and can ping your phone with any updates.
 
 ## Tech Stack
 
