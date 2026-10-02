@@ -105,6 +105,10 @@ public class ProcessedGmailMessage {
         return updateRelated;
     }
 
+    public void setUpdateRelated(Boolean updateRelated) {
+        this.updateRelated = updateRelated;
+    }
+
     public EmailOutcome getOutcome() {
         return outcome;
     }

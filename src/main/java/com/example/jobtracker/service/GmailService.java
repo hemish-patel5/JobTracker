@@ -27,7 +27,7 @@ public class GmailService {
     private static final String UPDATE_EMAIL_QUERY =
             "in:inbox newer_than:90d " +
             "{category:primary category:updates} " +
-            "update application";
+            "{\"next stage\" progressed update application}";
 
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;
@@ -100,6 +100,9 @@ public class GmailService {
             if (processedMessage.isPresent() &&
                     processedMessage.get()
                             .hasMessageData()) {
+                refreshUpdateClassification(
+                        processedMessage.get()
+                );
                 continue;
             }
 
@@ -155,6 +158,28 @@ public class GmailService {
             );
         }
 
+    }
+
+    private void refreshUpdateClassification(
+            ProcessedGmailMessage message
+    ) {
+        GmailMessageDto savedMessage = new GmailMessageDto(
+                message.getGmailMessageId(),
+                message.getSender(),
+                message.getSubject(),
+                message.getSnippet(),
+                message.getReceivedAt(),
+                message.getOutcome()
+        );
+
+        boolean updateRelated =
+                updateEmailDetector.isUpdateRelated(savedMessage);
+
+        if (updateRelated !=
+                Boolean.TRUE.equals(message.getUpdateRelated())) {
+            message.setUpdateRelated(updateRelated);
+            processedMessageRepository.save(message);
+        }
     }
 
     private List<GmailMessageDto> getSavedJobMessages() {

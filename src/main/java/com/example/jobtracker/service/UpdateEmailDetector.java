@@ -3,15 +3,8 @@ package com.example.jobtracker.service;
 import com.example.jobtracker.dto.GmailMessageDto;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class UpdateEmailDetector {
-
-    public static final List<String> KEYWORDS = List.of(
-            "update",
-            "application"
-    );
 
     public boolean isUpdateRelated(GmailMessageDto email) {
 
@@ -21,7 +14,9 @@ public class UpdateEmailDetector {
                 email.from()
         ).toLowerCase();
 
-        return KEYWORDS.stream()
-                .allMatch(text::contains);
+        return text.contains("next stage") ||
+                text.contains("progressed") ||
+                (text.contains("update") &&
+                        text.contains("application"));
     }
 }
