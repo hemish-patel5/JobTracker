@@ -205,21 +205,23 @@ public class GmailService {
     ) {
 
         EmailOutcome outcome = message.getOutcome();
+        GmailMessageDto savedMessage =
+                new GmailMessageDto(
+                        message.getGmailMessageId(),
+                        decodeHtml(message.getSender()),
+                        decodeHtml(message.getSubject()),
+                        decodeHtml(message.getSnippet()),
+                        message.getReceivedAt(),
+                        outcome
+                );
 
-        if (outcome == null) {
-            GmailMessageDto unclassifiedMessage =
-                    new GmailMessageDto(
-                            message.getGmailMessageId(),
-                            decodeHtml(message.getSender()),
-                            decodeHtml(message.getSubject()),
-                            decodeHtml(message.getSnippet()),
-                            message.getReceivedAt(),
-                            null
-                    );
+        EmailOutcome savedTextOutcome =
+                jobEmailClassifier.detectOutcome(savedMessage);
 
-            outcome = jobEmailClassifier.detectOutcome(
-                    unclassifiedMessage
-            );
+        if (outcome == null ||
+                (outcome == EmailOutcome.SUCCESS &&
+                        savedTextOutcome == EmailOutcome.REJECTION)) {
+            outcome = savedTextOutcome;
             message.setOutcome(outcome);
             processedMessageRepository.save(message);
         }
