@@ -1,6 +1,7 @@
 package com.example.jobtracker.dto;
 
 import com.example.jobtracker.model.EmailOutcome;
+import com.example.jobtracker.model.EmailClassification;
 
 public record GmailMessageDto(
         String id,
@@ -9,8 +10,32 @@ public record GmailMessageDto(
         String snippet,
         String fullBody,
         Long receivedAt,
-        EmailOutcome outcome
+        EmailOutcome outcome,
+        EmailClassification classification,
+        String matchedPhrase
 ) {
+    public GmailMessageDto(
+            String id,
+            String from,
+            String subject,
+            String snippet,
+            String fullBody,
+            Long receivedAt,
+            EmailOutcome outcome
+    ) {
+        this(
+                id,
+                from,
+                subject,
+                snippet,
+                fullBody,
+                receivedAt,
+                outcome,
+                null,
+                null
+        );
+    }
+
     public GmailMessageDto(
             String id,
             String from,
@@ -26,7 +51,9 @@ public record GmailMessageDto(
                 snippet,
                 null,
                 receivedAt,
-                outcome
+                outcome,
+                null,
+                null
         );
     }
 }

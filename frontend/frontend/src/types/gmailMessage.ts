@@ -6,4 +6,18 @@ export interface GmailMessage {
   fullBody?: string
   receivedAt: number | null
   outcome: 'SUCCESS' | 'REJECTION'
+  classification?:
+    | 'REJECTED'
+    | 'OFFER'
+    | 'INTERVIEW'
+    | 'ONLINE_ASSESSMENT'
+    | 'PROGRESSED'
+    | 'APPLICATION_RECEIVED'
+    | 'PENDING'
+    | 'ROLE_CLOSED'
+    | 'WITHDRAWN'
+    | 'REVIEW_REQUIRED'
+    | 'JOB_RECOMMENDATION'
+    | 'OTHER'
+  matchedPhrase?: string | null
 }

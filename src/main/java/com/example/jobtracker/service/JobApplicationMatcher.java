@@ -5,6 +5,7 @@ import com.example.jobtracker.model.JobApplication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class JobApplicationMatcher {
@@ -16,25 +17,25 @@ public class JobApplicationMatcher {
         JobApplication bestMatch = null;
         int bestScore = 0;
 
-        String emailText = (
-                email.from() + " " +
-                email.subject() + " " +
-                email.snippet()
-        ).toLowerCase();
+        String emailText = normalize(
+                email.from(),
+                email.subject(),
+                email.snippet(),
+                email.fullBody()
+        );
 
         for (JobApplication application : applications) {
 
             int score = 0;
 
-            if (emailText.contains(
-                    application.getCompany().toLowerCase()
-            )) {
+            String company = normalize(application.getCompany());
+            String role = normalize(application.getRole());
+
+            if (!company.isBlank() && emailText.contains(company)) {
                 score += 5;
             }
 
-            if (emailText.contains(
-                    application.getRole().toLowerCase()
-            )) {
+            if (!role.isBlank() && emailText.contains(role)) {
                 score += 5;
             }
 
@@ -47,5 +48,20 @@ public class JobApplicationMatcher {
         return bestScore >= 5
                 ? bestMatch
                 : null;
+    }
+
+    private String normalize(String... values) {
+        StringBuilder text = new StringBuilder();
+
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                text.append(' ').append(value);
+            }
+        }
+
+        return text.toString()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 }

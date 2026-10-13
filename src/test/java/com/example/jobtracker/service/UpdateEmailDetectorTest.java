@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UpdateEmailDetectorTest {
 
     private final UpdateEmailDetector detector =
-            new UpdateEmailDetector();
+            new UpdateEmailDetector(new JobEmailClassifier());
 
     @Test
     void detectsNextStageAsAnUpdate() {
@@ -25,10 +25,10 @@ class UpdateEmailDetectorTest {
     }
 
     @Test
-    void detectsUpdateOnlyWhenApplicationIsAlsoPresent() {
+    void genericUpdateLanguageIsNotEnough() {
         assertThat(detector.isUpdateRelated(message(
                 "An update about your application"
-        ))).isTrue();
+        ))).isFalse();
         assertThat(detector.isUpdateRelated(message(
                 "A general account update"
         ))).isFalse();
@@ -41,12 +41,23 @@ class UpdateEmailDetectorTest {
         ))).isFalse();
     }
 
+    @Test
+    void excludesStatusesThatAreNeitherSuccessNorRejection() {
+        assertThat(detector.isUpdateRelated(message(
+                "Your withdrawal has been confirmed"
+        ))).isFalse();
+        assertThat(detector.isUpdateRelated(message(
+                "The position has been closed"
+        ))).isFalse();
+    }
+
     private GmailMessageDto message(String text) {
         return new GmailMessageDto(
                 "gmail-id",
                 "jobs@example.com",
                 text,
                 "",
+                text,
                 1L,
                 null
         );

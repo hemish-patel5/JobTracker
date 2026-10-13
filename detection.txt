@@ -1,0 +1,495 @@
+1. Rejection email keywords
+Based on the recruitment templates and applicant examples, these are the first phrases I'd implement.
+Priority 1 — strong rejection signals
+Phrase to detect	Strength
+unfortunately + not moving forward	Very strong
+regret to inform + rejection decision	Very strong
+not successful	Very strong
+unsuccessful application	Very strong
+not selected	Very strong
+not been shortlisted	Very strong
+not progressing your application	Very strong
+will not be proceeding	Very strong
+decided not to move forward	Very strong
+move forward with other candidates	Very strong
+moving forward with another candidate	Very strong
+chosen another candidate	Very strong
+unable to advance you	Very strong
+will not be taking your application forward	Very strong
+not selected for further consideration	Very strong
+
+These suggest a rejection, but should not be sufficient by themselves:
+Keyword or phrase	Why it needs context
+unfortunately	Can describe a scheduling problem
+after careful consideration	Does not state the decision
+high volume of applications	Often appears in normal updates
+competitive applicant pool	May be part of a rejection
+other candidates	Doesn't necessarily mean you're rejected
+qualifications more closely aligned	Usually needs another-candidate context
+wish you all the best	Common polite sign-off
+keep your CV on file	Can appear after rejection
+future opportunities	Could be recruitment advertising
+thank you for your interest	Often appears in acknowledgements
+
+
+. Successful progression keywords
+A successful application does not necessarily mean you've received a job offer.
+For BetterTracker, I'd distinguish three levels of positive news.
+A. Assessment invitation
+Suggested status: ONLINE_ASSESSMENT
+Phrase	Meaning
+invited to complete an assessment	Assessment invitation
+complete your online assessment	Assessment invitation
+coding assessment invitation	Technical assessment
+technical test	Possible assessment
+online coding challenge	Technical assessment
+complete the following task	Possible take-home task
+assessment link	Possible assessment
+complete your pre-work	Possible assessment
+take-home assignment	Assessment invitation
+assessment centre invitation	Assessment-centre stage
+Recruitment templates commonly describe assessments as assignments or tests used during the hiring process, often with instructions and a completion deadline. 
+
+Recruiting Resources
++1
+
+
+
+B. Interview invitation or progression
+Suggested status: INTERVIEW
+Phrase	Meaning
+invitation to interview	Strong
+invite you for an interview	Strong
+invited to interview	Strong
+we would like to schedule an interview	Strong
+schedule a video interview	Strong
+book an interview time	Strong
+interview availability	Strong with recruitment context
+progressed to the next stage	Progression, stage not always known
+shortlisted for an interview	Strong
+selected for an interview	Strong
+meet with our hiring manager	Strong with recruitment context
+second round interview	Strong
+final interview invitation	Strong
+Workable's interview templates explicitly use invitations, scheduling requests, second-round interviews and progression to the next stage. 
+
+Workable
++2
+
+
+
+C. Actual job offer
+Suggested status: OFFER
+Phrase	Meaning
+pleased to offer you the position	Very strong
+we would like to offer you the role	Very strong
+delighted to offer you	Very strong
+offer of employment	Very strong
+formal offer of employment	Very strong
+your offer letter	Strong
+employment agreement for your review	Strong with context
+please review and sign your offer	Very strong
+conditional offer of employment	Very strong
+congratulations + explicit job offer	Very strong
+proposed start date + offer details	Supporting evidence
+
+
+. The classification system I'd build for BetterTracker
+Instead of only SUCCESS and FAILURE, use a more descriptive internal classification.
+REJECTED
+Negative
+
+Explicit decision not to continue with the candidate.
+
+OFFER
+Positive
+
+Explicit offer of employment.
+
+INTERVIEW
+Progression
+
+Invited to attend or schedule an interview.
+
+ASSESSMENT
+Progression
+
+Invited to complete a test, assessment or assignment.
+
+PROGRESSED
+Advanced to another stage, but the exact stage is unclear.
+
+APPLICATION_RECEIVED
+Receipt confirmed; no selection decision made.
+
+How to measure whether your classifier is getting better
+The research provides examples of phrasing, but not reliable frequency estimates of which phrases are most common across all employers. I wouldn't claim that a rule has 90% or 95% accuracy without testing it.
+For your project, I'd create a manually labelled test set of around 100–200 emails or suitably anonymised examples, with a mixture of rejection, progression, offers, acknowledgement, unrelated messages and ambiguous cases.
+Measure:
+- Precision: Of the emails BetterTracker labelled REJECTED, how many were actually rejections?
+- Recall: Of all actual rejection emails, how many did it detect?
+- False positive rate: How often does it mistakenly identify a rejection or offer?
+- Confusion matrix: Which categories get confused with one another?
+For this particular app, I'd prioritise high precision for REJECTED and OFFER, even if it means flagging more messages for review. A missed automatic classification is inconvenient; incorrectly telling you that you've been rejected or offered a job is much worse.
+Also test the application matcher separately from the email classifier. An email can be correctly classified as a rejection and still update the wrong application if a company has multiple open roles.
+
+My recommendation for BetterTracker
+Keep the following priorities:
+1. Detect explicit rejection decisions.
+2. Detect explicit offer decisions.
+3. Detect interview and assessment invitations.
+4. Distinguish progression from neutral acknowledgement.
+5. Return ambiguous cases for review rather than guessing.
+
+The biggest improvements over your original classifier would be switching to full email-body analysis, using explicit decision phrases instead of isolated keywords, and separating progression from final success. Those changes will be far more useful than simply adding 100 more keywords to your existing lists.
+
+REJECTED:
+not moving forward
+will not be moving forward
+will not be proceeding
+will not be progressing
+not selected
+not shortlisted
+application was unsuccessful
+application has been unsuccessful
+not successful
+decided not to proceed
+decided not to progress
+unable to offer you the position
+cannot offer you the role
+cannot proceed with your application
+selected another candidate
+chosen another applicant
+chosen a different candidate
+proceed with other candidates
+moving forward with other applicants
+pursuing other applicants
+no longer being considered
+not taking your application further
+will not be taking your candidacy further
+did not meet the selection criteria
+declined your application
+not inviting you to interview
+not progressing to the next stage
+not advancing your candidacy
+unable to advance your application
+we regret to inform you
+after careful consideration, we regret
+your application has not been successful
+
+OFFER:
+pleased to offer you
+delighted to offer you
+excited to offer you
+would like to offer you
+extending an offer
+offer of employment
+formal job offer
+formal offer of employment
+conditional offer of employment
+offer letter
+employment agreement
+employment contract
+review and sign your offer
+accept our job offer
+selected for employment
+congratulations on securing the position
+approved an offer for you
+pleased to make you a job offer
+we are offering you the position
+attached contract confirms our offer
+proposed start date
+please sign your offer letter
+
+INTERVIEW:
+invited to interview
+invite you to interview
+interview invitation
+invitation to interview
+schedule an interview
+arrange an interview
+book an interview
+interview availability
+provide your interview availability
+select an interview slot
+shortlisted for an interview
+selected for an interview
+technical interview
+live technical interview
+video interview
+virtual interview
+online interview
+phone interview
+phone screening
+telephone interview
+panel interview
+hiring manager interview
+second-round interview
+second interview
+final interview
+final-round interview
+interview booking
+choose an interview date
+meet with our hiring manager
+inviting you to a live interview
+please book your interview
+schedule a video interview
+
+ONLINE_ASSESSMENT:
+online assessment
+assessment invitation
+complete your assessment
+coding challenge
+coding test
+technical test
+technical assessment
+online aptitude test
+numerical reasoning assessment
+logical reasoning assessment
+psychometric assessment
+behavioural assessment
+one-way video interview
+recorded video interview
+take-home assignment
+programming exercise
+technical exercise
+work sample exercise
+assessment centre
+pre-interview task
+complete your pre-work
+assessment link
+online assessment link
+complete your online assessment
+complete the coding challenge
+invitation to complete an assessment
+submit the take-home assignment
+online assessment portal
+technical quiz
+timed coding test
+assessment deadline
+
+PROGRESSED:
+progressed to the next stage
+progressing to the next stage
+advanced to the next round
+advancing to the next round
+successful in screening
+passed initial screening
+passed initial review
+passed the screening round
+shortlisted for further consideration
+advanced your application
+moving forward with your application
+next stage of recruitment
+selected to progress
+successful in progressing
+passed the initial screening stage
+application has progressed
+proceeding to the next stage
+progressed to another stage
+shortlisted for the next stage
+
+APPLICATION_RECEIVED:
+application received
+thank you for applying
+submitted successfully
+application confirmation
+confirm receipt
+received your CV
+received your application
+application submitted
+submission successful
+application acknowledgement
+application acknowledgment
+application logged
+application successfully submitted
+thank you for your application
+we have received your application
+your application has been received
+application submission confirmed
+successfully applied
+
+PENDING:
+under review
+under consideration
+still reviewing
+reviewing applications
+no decision has been made
+recruitment delay
+shortlisting ongoing
+awaiting feedback
+results being reviewed
+interview postponed
+decision pending
+will be in touch
+recruitment timeline has changed
+currently reviewing applications
+application being reviewed
+selection process ongoing
+awaiting hiring manager feedback
+recruitment process delayed
+interview rescheduled
+position temporarily on hold
+we will update you shortly
+still considering your application
+review process is ongoing
+
+ROLE_CLOSED:
+vacancy cancelled
+position cancelled
+role withdrawn
+hiring freeze
+recruitment suspended
+position no longer available
+requisition closed
+funding withdrawn
+will not be filling the role
+hiring on hold indefinitely
+vacancy has been withdrawn
+position has been closed
+role has been cancelled
+recruitment has been cancelled
+opening has been cancelled
+we will not be hiring anyone
+company cancelled this opening
+
+WITHDRAWN:
+withdrawal confirmed
+application withdrawn
+withdrawal request processed
+withdrawn as requested
+removed from consideration at your request
+no longer an active applicant
+cancelled your application at your request
+your withdrawal has been confirmed
+application withdrawal successful
+we have processed your withdrawal
+withdrawal request confirmed
+removed your name from consideration
+
+REVIEW_REQUIRED:
+check your candidate portal
+status changed
+sent in error
+corrected decision
+no final decision
+await verification
+decision reconsidered
+conflicting status
+please contact recruitment
+details to follow
+incorrect status notification
+previous message was incorrect
+awaiting clarification
+status under investigation
+decision remains uncertain
+message may have been sent in error
+recruitment status requires confirmation
+contradictory status
+please disregard the previous email
+an earlier status notice will be corrected
+no hiring decision has been made
+
+OTHER:
+newsletter
+job alert
+apply now
+new vacancies
+career fair
+webinar
+discount offer
+promotional offer
+weekly digest
+new job openings
+jobs newsletter
+career opportunities
+recruitment advertising
+upcoming careers event
+job recommendations
+new positions available
+
+
+AMBIGUOUS_KEYWORDS:
+unfortunately
+successful
+congratulations
+offer
+interview
+assessment
+not selected
+withdrawn
+thank you for your interest
+after careful consideration
+high volume of applications
+competitive applicant pool
+wish you all the best
+future opportunities
+we will be in touch
+pleased
+excited
+
+
+CLASSIFICATION RULES:
+
+1. Search the full email body, not just the subject or Gmail snippet.
+
+2. Match case-insensitively.
+
+3. Prefer complete phrases over individual keywords.
+
+4. Only classify emails that relate to an existing job application.
+
+5. REJECTED:
+   Require an explicit negative decision about the candidate.
+   Do not reject based on "unfortunately" alone.
+
+6. OFFER:
+   Require an explicit employment offer.
+   Do not classify "congratulations" or "offer" alone as OFFER.
+
+7. INTERVIEW:
+   Require an invitation, selection, or scheduling request.
+   Do not classify a mention of a past interview as a new interview.
+
+8. ONLINE_ASSESSMENT:
+   Require an invitation or instruction to complete an assessment.
+   Do not classify an assessment submission receipt as a new assessment.
+
+9. PROGRESSED:
+   Only use when the email clearly confirms progression,
+   but does not specify an interview, assessment, or offer.
+
+10. APPLICATION_RECEIVED:
+    Detect acknowledgement emails without treating them as
+    successful hiring outcomes.
+
+11. PENDING:
+    Preserve the existing application status.
+
+12. ROLE_CLOSED:
+    Do not automatically treat company cancellation as
+    individual candidate rejection.
+
+13. WITHDRAWN:
+    Require evidence that the applicant requested withdrawal.
+
+14. REVIEW_REQUIRED:
+    Use when decisions are unclear, contradictory,
+    conditional, corrected, or potentially sent in error.
+
+15. OTHER:
+    Ignore unrelated emails, promotions, and newsletters.
+
+16. If both positive and negative signals appear,
+    examine the final decision sentence.
+    If still ambiguous, use REVIEW_REQUIRED.
+
+17. Never automatically overwrite an existing OFFER
+    or REJECTED status based on a lower-confidence email.
+
+18. Save the matched phrase and email message ID
+    for debugging and explaining the classification.
+
+19. Ignore quoted email history when possible.
+
+20. Prioritise accuracy over classifying every email.
