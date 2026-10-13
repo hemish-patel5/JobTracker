@@ -2,7 +2,9 @@ package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
 import com.example.jobtracker.model.EmailOutcome;
+import com.example.jobtracker.model.JobApplication;
 import com.example.jobtracker.model.ProcessedGmailMessage;
+import com.example.jobtracker.repository.JobApplicationRepository;
 import com.example.jobtracker.repository.ProcessedGmailMessageRepository;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
@@ -14,6 +16,7 @@ import org.springframework.web.util.HtmlUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.Base64;
+import java.util.Objects;
 import java.nio.charset.StandardCharsets;
 
 @Service
@@ -24,35 +27,39 @@ public class GmailService {
             "{category:primary category:updates} " +
             JobEmailKeywords.asGmailSearchGroup();
 
-    private static final String UPDATE_EMAIL_QUERY =
-            "in:inbox newer_than:90d " +
-            "{category:primary category:updates} " +
-            "{\"next stage\" progressed update application}";
+    private static final String UPDATE_EMAIL_QUERY = JOB_EMAIL_QUERY;
 
     private final GmailAuthService authService;
     private final ProcessedGmailMessageRepository processedMessageRepository;
     private final JobEmailDetector jobEmailDetector;
     private final UpdateEmailDetector updateEmailDetector;
     private final JobEmailClassifier jobEmailClassifier;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final JobApplicationMatcher jobApplicationMatcher;
 
     public GmailService(
             GmailAuthService authService,
             ProcessedGmailMessageRepository processedMessageRepository,
             JobEmailDetector jobEmailDetector,
             UpdateEmailDetector updateEmailDetector,
-            JobEmailClassifier jobEmailClassifier
+            JobEmailClassifier jobEmailClassifier,
+            JobApplicationRepository jobApplicationRepository,
+            JobApplicationMatcher jobApplicationMatcher
     ) {
         this.authService = authService;
         this.processedMessageRepository = processedMessageRepository;
         this.jobEmailDetector = jobEmailDetector;
         this.updateEmailDetector = updateEmailDetector;
         this.jobEmailClassifier = jobEmailClassifier;
+        this.jobApplicationRepository = jobApplicationRepository;
+        this.jobApplicationMatcher = jobApplicationMatcher;
     }
 
     public List<GmailMessageDto> getRecentMessages()
             throws Exception {
 
         syncMessages(JOB_EMAIL_QUERY);
+        refreshStoredClassifications();
 
         return getSavedJobMessages();
     }
@@ -61,6 +68,7 @@ public class GmailService {
             throws Exception {
 
         syncMessages(UPDATE_EMAIL_QUERY);
+        refreshStoredClassifications();
 
         return getSavedUpdateMessages();
     }
@@ -73,6 +81,8 @@ public class GmailService {
         }
 
         Gmail gmail = authService.getGmailClient();
+        List<JobApplication> applications =
+                jobApplicationRepository.findAll();
 
         ListMessagesResponse response =
                 gmail.users()
@@ -99,9 +109,6 @@ public class GmailService {
 
             if (processedMessage.isPresent() &&
                     processedMessage.get().hasMessageData()) {
-                refreshUpdateClassification(
-                        processedMessage.get()
-                );
                 continue;
             }
 
@@ -134,9 +141,15 @@ public class GmailService {
                             gmailMessage
                     );
 
+            EmailClassificationResult classification =
+                    jobEmailClassifier.classify(gmailMessage);
+
             boolean updateRelated =
-                    updateEmailDetector.isUpdateRelated(
-                            gmailMessage
+                    matchesExistingApplication(
+                            gmailMessage,
+                            applications
+                    ) && jobEmailClassifier.isUpdateClassification(
+                            classification.classification()
                     );
 
             EmailOutcome outcome =
@@ -145,7 +158,7 @@ public class GmailService {
                             gmailMessage.fullBody()
                     );
 
-            processedMessageRepository.save(
+            ProcessedGmailMessage savedMessage =
                     new ProcessedGmailMessage(
                             gmailMessageId,
                             gmailMessage.from(),
@@ -158,10 +171,27 @@ public class GmailService {
                             updateRelated,
                             outcome,
                             true
-                    )
+                    );
+
+            savedMessage.setClassification(
+                    classification.classification()
             );
+            savedMessage.setMatchedPhrase(
+                    classification.matchedPhrase()
+            );
+            processedMessageRepository.save(savedMessage);
         }
 
+    }
+
+    private void refreshStoredClassifications() {
+        List<JobApplication> applications =
+                jobApplicationRepository.findAll();
+
+        processedMessageRepository.findAll()
+                .forEach(message ->
+                        refreshClassification(message, applications)
+                );
     }
 
     public Optional<String> getMessageBody(
@@ -214,8 +244,9 @@ public class GmailService {
         return Optional.of(fullBody);
     }
 
-    private void refreshUpdateClassification(
-            ProcessedGmailMessage message
+    private void refreshClassification(
+            ProcessedGmailMessage message,
+            List<JobApplication> applications
     ) {
         GmailMessageDto savedMessage = new GmailMessageDto(
                 message.getGmailMessageId(),
@@ -227,14 +258,46 @@ public class GmailService {
                 message.getOutcome()
         );
 
+        EmailClassificationResult classification =
+                jobEmailClassifier.classify(savedMessage);
         boolean updateRelated =
-                updateEmailDetector.isUpdateRelated(savedMessage);
+                matchesExistingApplication(
+                        savedMessage,
+                        applications
+                ) && updateEmailDetector.isUpdateRelated(savedMessage);
+        boolean jobRelated =
+                jobEmailDetector.isJobRelated(savedMessage);
+        EmailOutcome outcome =
+                jobEmailClassifier.detectOutcome(savedMessage);
 
-        if (updateRelated !=
-                Boolean.TRUE.equals(message.getUpdateRelated())) {
+        boolean changed =
+                updateRelated != Boolean.TRUE.equals(message.getUpdateRelated()) ||
+                jobRelated != Boolean.TRUE.equals(message.getJobRelated()) ||
+                outcome != message.getOutcome() ||
+                classification.classification() != message.getClassification() ||
+                !Objects.equals(
+                        classification.matchedPhrase(),
+                        message.getMatchedPhrase()
+                );
+
+        if (changed) {
             message.setUpdateRelated(updateRelated);
+            message.setJobRelated(jobRelated);
+            message.setOutcome(outcome);
+            message.setClassification(classification.classification());
+            message.setMatchedPhrase(classification.matchedPhrase());
             processedMessageRepository.save(message);
         }
+    }
+
+    private boolean matchesExistingApplication(
+            GmailMessageDto email,
+            List<JobApplication> applications
+    ) {
+        return jobApplicationMatcher.findBestMatch(
+                email,
+                applications
+        ) != null;
     }
 
     private List<GmailMessageDto> getSavedJobMessages() {
@@ -292,7 +355,9 @@ public class GmailService {
                 decodeHtml(message.getSnippet()),
                 null,
                 message.getReceivedAt(),
-                outcome
+                outcome,
+                message.getClassification(),
+                message.getMatchedPhrase()
         );
     }
 

@@ -34,6 +34,11 @@ public class ProcessedGmailMessage {
     @Enumerated(EnumType.STRING)
     private EmailOutcome outcome;
 
+    @Enumerated(EnumType.STRING)
+    private EmailClassification classification;
+
+    private String matchedPhrase;
+
     private Boolean fullBodyClassified;
 
     private Boolean notificationSent;
@@ -137,6 +142,10 @@ public class ProcessedGmailMessage {
         return jobRelated;
     }
 
+    public void setJobRelated(Boolean jobRelated) {
+        this.jobRelated = jobRelated;
+    }
+
     public Long getReceivedAt() {
         return receivedAt;
     }
@@ -159,6 +168,22 @@ public class ProcessedGmailMessage {
 
     public void setOutcome(EmailOutcome outcome) {
         this.outcome = outcome;
+    }
+
+    public EmailClassification getClassification() {
+        return classification;
+    }
+
+    public void setClassification(EmailClassification classification) {
+        this.classification = classification;
+    }
+
+    public String getMatchedPhrase() {
+        return matchedPhrase;
+    }
+
+    public void setMatchedPhrase(String matchedPhrase) {
+        this.matchedPhrase = matchedPhrase;
     }
 
     public Boolean getFullBodyClassified() {

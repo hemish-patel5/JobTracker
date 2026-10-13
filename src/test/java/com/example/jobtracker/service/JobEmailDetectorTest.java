@@ -1,0 +1,47 @@
+package com.example.jobtracker.service;
+
+import com.example.jobtracker.dto.GmailMessageDto;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class JobEmailDetectorTest {
+
+    private final JobEmailDetector detector =
+            new JobEmailDetector(new JobEmailClassifier());
+
+    @Test
+    void filtersJobAlertsEvenWhenTheyMentionSoftwareRoles() {
+        GmailMessageDto email = message(
+                "Weekly job alert",
+                "New Software Engineer jobs are available. Apply now."
+        );
+
+        assertThat(detector.isJobRelated(email)).isFalse();
+    }
+
+    @Test
+    void usesTheFullBodyToDetectApplicationMessages() {
+        GmailMessageDto email = message(
+                "Application update",
+                "We have decided not to move forward with your application."
+        );
+
+        assertThat(detector.isJobRelated(email)).isTrue();
+    }
+
+    private GmailMessageDto message(
+            String subject,
+            String fullBody
+    ) {
+        return new GmailMessageDto(
+                "gmail-id",
+                "jobs@example.com",
+                subject,
+                "Short Gmail preview",
+                fullBody,
+                1L,
+                null
+        );
+    }
+}

@@ -6,17 +6,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class UpdateEmailDetector {
 
+    private final JobEmailClassifier classifier;
+
+    public UpdateEmailDetector(JobEmailClassifier classifier) {
+        this.classifier = classifier;
+    }
+
     public boolean isUpdateRelated(GmailMessageDto email) {
-
-        String text = (
-                email.subject() + " " +
-                email.snippet() + " " +
-                email.from()
-        ).toLowerCase();
-
-        return text.contains("next stage") ||
-                text.contains("progressed") ||
-                (text.contains("update") &&
-                        text.contains("application"));
+        return classifier.isUpdateClassification(
+                classifier.classify(email).classification()
+        );
     }
 }

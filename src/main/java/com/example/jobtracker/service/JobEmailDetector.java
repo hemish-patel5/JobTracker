@@ -6,11 +6,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class JobEmailDetector {
 
+    private final JobEmailClassifier classifier;
+
+    public JobEmailDetector(JobEmailClassifier classifier) {
+        this.classifier = classifier;
+    }
+
     public boolean isJobRelated(GmailMessageDto email) {
+
+        if (!classifier.isJobClassification(
+                classifier.classify(email).classification()
+        )) {
+            return false;
+        }
 
         String text = (
                 email.subject() + " " +
                 email.snippet() + " " +
+                email.fullBody() + " " +
                 email.from()
         ).toLowerCase();
 
