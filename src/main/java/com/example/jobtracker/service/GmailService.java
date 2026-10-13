@@ -136,21 +136,26 @@ public class GmailService {
                             null
                     );
 
-            boolean jobRelated =
-                    jobEmailDetector.isJobRelated(
-                            gmailMessage
+            boolean matchesApplication =
+                    matchesExistingApplication(
+                            gmailMessage,
+                            applications
                     );
+
+            boolean jobRelated =
+                    matchesApplication &&
+                            jobEmailDetector.isJobRelated(
+                                    gmailMessage
+                            );
 
             EmailClassificationResult classification =
                     jobEmailClassifier.classify(gmailMessage);
 
             boolean updateRelated =
-                    matchesExistingApplication(
-                            gmailMessage,
-                            applications
-                    ) && jobEmailClassifier.isUpdateClassification(
-                            classification.classification()
-                    );
+                    matchesApplication &&
+                            jobEmailClassifier.isUpdateClassification(
+                                    classification.classification()
+                            );
 
             EmailOutcome outcome =
                     jobEmailClassifier.detectOutcome(
@@ -260,13 +265,17 @@ public class GmailService {
 
         EmailClassificationResult classification =
                 jobEmailClassifier.classify(savedMessage);
-        boolean updateRelated =
+        boolean matchesApplication =
                 matchesExistingApplication(
                         savedMessage,
                         applications
-                ) && updateEmailDetector.isUpdateRelated(savedMessage);
+                );
+        boolean updateRelated =
+                matchesApplication &&
+                        updateEmailDetector.isUpdateRelated(savedMessage);
         boolean jobRelated =
-                jobEmailDetector.isJobRelated(savedMessage);
+                matchesApplication &&
+                        jobEmailDetector.isJobRelated(savedMessage);
         EmailOutcome outcome =
                 jobEmailClassifier.detectOutcome(savedMessage);
 

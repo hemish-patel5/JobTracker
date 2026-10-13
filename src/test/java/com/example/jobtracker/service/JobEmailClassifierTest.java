@@ -51,6 +51,10 @@ class JobEmailClassifierTest {
                 EmailClassification.INTERVIEW
         );
         assertClassification(
+                "We would like to invite you to the first stage pre-screening call.",
+                EmailClassification.INTERVIEW
+        );
+        assertClassification(
                 "You are invited to complete an assessment.",
                 EmailClassification.ONLINE_ASSESSMENT
         );

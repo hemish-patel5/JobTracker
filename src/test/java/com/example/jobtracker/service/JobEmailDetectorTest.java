@@ -21,6 +21,16 @@ class JobEmailDetectorTest {
     }
 
     @Test
+    void filtersPromotionalOffers() {
+        GmailMessageDto email = message(
+                "Beat the heat this summer - special offer",
+                "Cool down sale on now. Shop hot deals and buy now."
+        );
+
+        assertThat(detector.isJobRelated(email)).isFalse();
+    }
+
+    @Test
     void usesTheFullBodyToDetectApplicationMessages() {
         GmailMessageDto email = message(
                 "Application update",

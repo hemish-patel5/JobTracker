@@ -92,6 +92,7 @@ public class JobEmailClassifier {
             "invite you to interview",
             "interview invitation",
             "invitation to interview",
+            "invite you to the first stage",
             "schedule an interview",
             "schedule a video interview",
             "arrange an interview",
@@ -308,7 +309,15 @@ public class JobEmailClassifier {
             "recruitment advertising",
             "upcoming careers event",
             "job recommendations",
-            "new positions available"
+            "new positions available",
+            "shop hot deals",
+            "shop now",
+            "limited time deal",
+            "discount code",
+            "free shipping",
+            "rewards members",
+            "clearance sale",
+            "buy now"
     );
 
     private static final List<String> AMBIGUOUS_PHRASES = List.of(
