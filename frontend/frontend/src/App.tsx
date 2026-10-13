@@ -220,7 +220,10 @@ function App() {
   }, [activePage, gmailLoaded, loadGmailMessages])
 
   useEffect(() => {
-    if (activePage !== 'updates' || updatesLoaded) return
+    if (
+      (activePage !== 'updates' && activePage !== 'emails') ||
+      updatesLoaded
+    ) return
 
     const controller = new AbortController()
     // Update synchronization starts when the Updates screen is first opened.
@@ -269,6 +272,20 @@ function App() {
   const countByStatus = (applicationStatus: ApplicationStatus) =>
     applications.filter((application) => application.status === applicationStatus)
       .length
+
+  const successCount = updateMessages.filter(
+    (message) => message.outcome === 'SUCCESS',
+  ).length
+  const rejectionCount = updateMessages.filter(
+    (message) => message.outcome === 'REJECTION',
+  ).length
+  const latestEmailTimestamp = gmailMessages.reduce<number | null>(
+    (latest, message) =>
+      message.receivedAt !== null && (latest === null || message.receivedAt > latest)
+        ? message.receivedAt
+        : latest,
+    null,
+  )
 
   const updateField = <K extends keyof NewJobApplication>(
     field: K,
@@ -380,10 +397,18 @@ function App() {
   }
 
   return (
-    <main className="tracker">
+    <div className="tracker">
       <header className="tracker-header">
         <div className="brand-navigation">
-          <h1>BetterTracker</h1>
+          <button
+            type="button"
+            className="brand"
+            onClick={() => setActivePage('applications')}
+            aria-label="Open applications"
+          >
+            <span className="brand-mark" aria-hidden="true">▣</span>
+            <span>BetterTracker</span>
+          </button>
           <nav className="page-navigation" aria-label="Main navigation">
             <button
               type="button"
@@ -412,12 +437,11 @@ function App() {
           </nav>
         </div>
         <div className="header-actions">
-          {activePage === 'applications' && (
-            <button type="button" onClick={openAddForm}>
-              + Add Application
-            </button>
-          )}
-          <div className="gmail-actions">
+          <button type="button" className="primary-button" onClick={openAddForm}>
+            Add Application
+          </button>
+          <span className="header-divider" aria-hidden="true" />
+          <div className="session-actions">
             <button
               type="button"
               onClick={connectGmail}
@@ -433,17 +457,42 @@ function App() {
         </div>
       </header>
 
-      {activePage === 'applications' && (
-        <>
-          <section className="summary" aria-label="Application summary">
-            <span>{applications.length} Total</span>
-            <span>{countByStatus('APPLIED')} Applied</span>
-            <span>{countByStatus('INTERVIEW')} Interview</span>
-            <span>{countByStatus('OFFER')} Offer</span>
-          </section>
+      <main className="page-content">
+        {activePage === 'applications' && (
+          <div className="page-stack">
+            <section className="page-intro">
+              <div>
+                <p className="eyebrow">Pipeline velocity</p>
+                <h1>Applications</h1>
+              </div>
+              <span className="outlined-pill">Updated today</span>
+            </section>
 
-          <section className="filters" aria-label="Application filters">
-            <label>
+            <section className="summary" aria-label="Application summary">
+              <article className="metric-card">
+                <span>Total</span>
+                <strong>{applications.length}</strong>
+                <small>roles</small>
+              </article>
+              <article className="metric-card">
+                <span>Applied</span>
+                <strong>{countByStatus('APPLIED')}</strong>
+                <small>active</small>
+              </article>
+              <article className="metric-card">
+                <span>Interview</span>
+                <strong>{countByStatus('INTERVIEW')}</strong>
+                <small>rounds</small>
+              </article>
+              <article className="metric-card metric-card-dark">
+                <span>Offer</span>
+                <strong>{countByStatus('OFFER')}</strong>
+                <small>extended</small>
+              </article>
+            </section>
+
+            <section className="filters panel" aria-label="Application filters">
+              <label className="search-field">
               <span className="sr-only">Search applications</span>
               <input
                 type="search"
@@ -451,240 +500,16 @@ function App() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
-            </label>
-            <label className="status-filter">
-              <span>Status:</span>
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as ApplicationStatus | 'ALL')
-                }
-              >
-                <option value="ALL">[ All ▼ ]</option>
-                {statuses.map((applicationStatus) => (
-                  <option value={applicationStatus} key={applicationStatus}>
-                    {statusLabels[applicationStatus]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </section>
-
-          {isLoading && <p className="message">Loading applications...</p>}
-
-          {error && (
-            <div className="message error-message" role="alert">
-              <span>{error}</span>
-              <button type="button" onClick={retryLoadingApplications}>
-                Try again
-              </button>
-            </div>
-          )}
-
-          {!isLoading && !error && filteredApplications.length === 0 && (
-            <p className="message">No applications found.</p>
-          )}
-
-          {!isLoading && !error && filteredApplications.length > 0 && (
-            <section className="application-list" aria-label="Job applications">
-              {filteredApplications.map((application) => (
-                <article className="application-card" key={application.id}>
-                  <p>{application.company}</p>
-                  <p>{application.role}</p>
-                  <div className="application-meta">
-                    <span>{application.location || 'Not specified'}</span>
-                    <span>{statusLabels[application.status]}</span>
-                  </div>
-                  <p>Applied {formatDate(application.dateApplied)}</p>
-                  <div className="application-actions">
-                    <button type="button" onClick={() => openEditForm(application)}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(application)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </section>
-          )}
-        </>
-      )}
-
-      {activePage === 'emails' && (
-        <section className="gmail-message-section" aria-label="Gmail messages">
-          <div className="section-heading">
-            <h2>Job Emails</h2>
-            <div className="email-controls">
-              <button
-                type="button"
-                onClick={() =>
-                  setEmailSort((current) =>
-                    current === 'latest' ? 'oldest' : 'latest',
-                  )
-                }
-              >
-                Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
-              </button>
-              <button type="button" onClick={() => void loadGmailMessages()}>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {gmailLoading && <p className="message">Loading Gmail messages...</p>}
-
-          {!gmailLoading && gmailError && (
-            <div className="message error-message" role="alert">
-              <span>{gmailError}</span>
-              <button type="button" onClick={() => void loadGmailMessages()}>
-                Try again
-              </button>
-            </div>
-          )}
-
-          {!gmailLoading && !gmailError && gmailMessages.length === 0 && (
-            <p className="message">No job-related Gmail messages found.</p>
-          )}
-
-          {!gmailLoading && !gmailError && sortedGmailMessages.map((message) => (
-            <article className="gmail-message" key={message.id}>
-              <p className="gmail-subject">
-                <a
-                  href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {message.subject || '(No subject)'}
-                </a>
-              </p>
-              <p>From: {message.from || 'Unknown sender'}</p>
-              <p>Received: {formatEmailDate(message.receivedAt)}</p>
-              <p>{message.snippet || 'No message preview available.'}</p>
-              <p className="gmail-id">Gmail ID: {message.id}</p>
-            </article>
-          ))}
-        </section>
-      )}
-
-      {activePage === 'updates' && (
-        <section className="gmail-message-section" aria-label="Update emails">
-          <div className="section-heading">
-            <h2>Updates</h2>
-            <div className="email-controls">
-              <button
-                type="button"
-                onClick={() =>
-                  setEmailSort((current) =>
-                    current === 'latest' ? 'oldest' : 'latest',
-                  )
-                }
-              >
-                Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
-              </button>
-              <button type="button" onClick={() => void loadUpdateMessages()}>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {updatesLoading && <p className="message">Loading updates...</p>}
-
-          {!updatesLoading && updatesError && (
-            <div className="message error-message" role="alert">
-              <span>{updatesError}</span>
-              <button type="button" onClick={() => void loadUpdateMessages()}>
-                Try again
-              </button>
-            </div>
-          )}
-
-          {!updatesLoading && !updatesError && updatesLoaded &&
-            updateMessages.length === 0 && (
-              <p className="message">No update emails found.</p>
-            )}
-
-          {!updatesLoading && !updatesError && sortedUpdateMessages.map((message) => (
-            <article className="gmail-message" key={message.id}>
-              <p className="gmail-subject">
-                <a
-                  href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {message.subject || '(No subject)'}
-                </a>
-              </p>
-              <p>From: {message.from || 'Unknown sender'}</p>
-              <p>Received: {formatEmailDate(message.receivedAt)}</p>
-              <p>
-                Outcome:{' '}
-                <span
-                  className={`email-outcome ${
-                    message.outcome === 'REJECTION'
-                      ? 'email-outcome-rejection'
-                      : 'email-outcome-success'
-                  }`}
-                >
-                  {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
-                </span>
-              </p>
-              <p className="gmail-id">Gmail ID: {message.id}</p>
-            </article>
-          ))}
-        </section>
-      )}
-
-      {isFormOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={closeForm}>
-          <section
-            className="application-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="application-form-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <h2 id="application-form-title">
-              {editingApplicationId === null
-                ? 'Add Application'
-                : 'Edit Application'}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <label>
-                Company
-                <input
-                  required
-                  autoFocus
-                  value={newApplication.company}
-                  onChange={(event) => updateField('company', event.target.value)}
-                />
               </label>
-              <label>
-                Role
-                <input
-                  required
-                  value={newApplication.role}
-                  onChange={(event) => updateField('role', event.target.value)}
-                />
-              </label>
-              <label>
-                Location
-                <input
-                  value={newApplication.location}
-                  onChange={(event) => updateField('location', event.target.value)}
-                />
-              </label>
-              <label>
-                Status
+              <label className="status-filter">
+                <span>Status</span>
                 <select
-                  value={newApplication.status}
+                  value={status}
                   onChange={(event) =>
-                    updateField('status', event.target.value as ApplicationStatus)
+                    setStatus(event.target.value as ApplicationStatus | 'ALL')
                   }
                 >
+                  <option value="ALL">All</option>
                   {statuses.map((applicationStatus) => (
                     <option value={applicationStatus} key={applicationStatus}>
                       {statusLabels[applicationStatus]}
@@ -692,53 +517,210 @@ function App() {
                   ))}
                 </select>
               </label>
-              <label>
-                Date Applied
-                <input
-                  required
-                  type="date"
-                  value={newApplication.dateApplied}
-                  onChange={(event) =>
-                    updateField('dateApplied', event.target.value)
-                  }
-                />
-              </label>
-              <label>
-                Job URL
-                <input
-                  type="url"
-                  value={newApplication.jobUrl}
-                  onChange={(event) => updateField('jobUrl', event.target.value)}
-                />
-              </label>
-              <label>
-                Notes
-                <textarea
-                  rows={3}
-                  value={newApplication.notes}
-                  onChange={(event) => updateField('notes', event.target.value)}
-                />
-              </label>
+            </section>
 
+            {isLoading && <p className="message panel">Loading applications...</p>}
+
+            {error && (
+              <div className="message panel error-message" role="alert">
+                <span>{error}</span>
+                <button type="button" onClick={retryLoadingApplications}>Try again</button>
+              </div>
+            )}
+
+            {!isLoading && !error && filteredApplications.length === 0 && (
+              <div className="empty-state panel">
+                <strong>No matching applications</strong>
+                <span>Try another keyword or status.</span>
+              </div>
+            )}
+
+            {!isLoading && !error && filteredApplications.length > 0 && (
+              <section className="application-list" aria-label="Job applications">
+                {filteredApplications.map((application) => (
+                  <article className="application-card panel" key={application.id}>
+                    <div className="application-copy">
+                      <div className="card-title-row">
+                        <h2>{application.company}</h2>
+                        <span className={`status-badge status-${application.status.toLowerCase()}`}>
+                          {statusLabels[application.status]}
+                        </span>
+                      </div>
+                      <p className="application-role">{application.role}</p>
+                      <p className="application-meta">
+                        <span>{application.location || 'Not specified'}</span>
+                        <span aria-hidden="true">/</span>
+                        <span>Applied {formatDate(application.dateApplied)}</span>
+                      </p>
+                    </div>
+                    <div className="application-actions">
+                      <button type="button" onClick={() => openEditForm(application)}>Edit</button>
+                      <button type="button" onClick={() => void handleDelete(application)}>Delete</button>
+                    </div>
+                  </article>
+                ))}
+                <p className="result-count">
+                  Showing {filteredApplications.length} of {applications.length} tracked applications
+                </p>
+              </section>
+            )}
+          </div>
+        )}
+
+        {activePage === 'emails' && (
+          <div className="page-stack email-page">
+            <section className="page-intro">
+              <div>
+                <p className="eyebrow">Connected inbox</p>
+                <h1>Job Emails</h1>
+                <p className="intro-copy">Recruitment messages detected from your Gmail inbox.</p>
+              </div>
+              <span className="outlined-pill">{gmailMessages.length} messages</span>
+            </section>
+
+            <section className="email-overview" aria-label="Email overview">
+              <div><span>Gmail API</span><strong>{gmailConnected ? 'Connected' : 'Not connected'}</strong></div>
+              <div><span>Total job emails</span><strong>{gmailMessages.length} active</strong></div>
+              <div><span>Application updates</span><strong>{updateMessages.length} reviews</strong></div>
+              <div><span>Latest email</span><strong>{latestEmailTimestamp ? formatEmailDate(latestEmailTimestamp) : 'Not loaded'}</strong></div>
+            </section>
+
+            <section className="section-heading panel">
+              <div>
+                <h2>Inbox</h2>
+                <span>{gmailMessages.length} total</span>
+              </div>
+              <div className="email-controls">
+                <button type="button" onClick={() => setEmailSort((current) => current === 'latest' ? 'oldest' : 'latest')}>
+                  Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
+                </button>
+                <button type="button" onClick={() => void loadGmailMessages()}>Refresh</button>
+              </div>
+            </section>
+
+            {gmailLoading && <p className="message panel">Loading Gmail messages...</p>}
+            {!gmailLoading && gmailError && (
+              <div className="message panel error-message" role="alert">
+                <span>{gmailError}</span>
+                <button type="button" onClick={() => void loadGmailMessages()}>Try again</button>
+              </div>
+            )}
+            {!gmailLoading && !gmailError && gmailMessages.length === 0 && (
+              <div className="empty-state panel"><strong>No job emails found</strong><span>Refresh after Gmail is connected.</span></div>
+            )}
+            {!gmailLoading && !gmailError && (
+              <section className="email-list" aria-label="Gmail messages">
+                {sortedGmailMessages.map((message) => {
+                  const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${message.id}`
+                  return (
+                    <article className="gmail-message panel" key={message.id}>
+                      <div className="email-card-top">
+                        <div className="email-copy">
+                          <h2 className="gmail-subject"><a href={gmailUrl} target="_blank" rel="noreferrer">{message.subject || '(No subject)'}</a></h2>
+                          <p className="email-meta"><span><b>From:</b> {message.from || 'Unknown sender'}</span><span>Received: {formatEmailDate(message.receivedAt)}</span></p>
+                        </div>
+                      </div>
+                      <p className="email-snippet">{message.snippet || 'No message preview available.'}</p>
+                      <div className="email-card-footer">
+                        <p className="gmail-id">Gmail ID: <code>{message.id}</code></p>
+                        <a className="small-button" href={gmailUrl} target="_blank" rel="noreferrer">Open in Gmail</a>
+                      </div>
+                    </article>
+                  )
+                })}
+              </section>
+            )}
+          </div>
+        )}
+
+        {activePage === 'updates' && (
+          <div className="page-stack updates-page">
+            <section className="sync-card panel">
+              <div>
+                <div className="card-title-row"><h1>Sync Feed</h1><span className="outlined-pill">Live</span></div>
+                <p>Application outcomes parsed directly from your inbox.</p>
+              </div>
+              <div className="outcome-counts">
+                <span className="outcome-count outcome-success">Success <b>{successCount}</b></span>
+                <span className="outcome-count outcome-rejection">Rejection <b>{rejectionCount}</b></span>
+              </div>
+            </section>
+
+            <section className="section-heading panel">
+              <div><h2>Updates</h2><span>{updateMessages.length} total</span></div>
+              <div className="email-controls">
+                <button type="button" onClick={() => setEmailSort((current) => current === 'latest' ? 'oldest' : 'latest')}>
+                  Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
+                </button>
+                <button type="button" onClick={() => void loadUpdateMessages()}>Refresh</button>
+              </div>
+            </section>
+
+            {updatesLoading && <p className="message panel">Loading updates...</p>}
+            {!updatesLoading && updatesError && (
+              <div className="message panel error-message" role="alert">
+                <span>{updatesError}</span>
+                <button type="button" onClick={() => void loadUpdateMessages()}>Try again</button>
+              </div>
+            )}
+            {!updatesLoading && !updatesError && updatesLoaded && updateMessages.length === 0 && (
+              <div className="empty-state panel"><strong>No update emails found</strong><span>New application updates will appear here.</span></div>
+            )}
+            {!updatesLoading && !updatesError && (
+              <section className="update-list" aria-label="Update emails">
+                {sortedUpdateMessages.map((message) => (
+                  <article className="update-card panel" key={message.id}>
+                    <div className="update-copy">
+                      <div className="card-title-row">
+                        <h2 className="gmail-subject"><a href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`} target="_blank" rel="noreferrer">{message.subject || '(No subject)'}</a></h2>
+                        <span className={`email-outcome ${message.outcome === 'REJECTION' ? 'email-outcome-rejection' : 'email-outcome-success'}`}>
+                          {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
+                        </span>
+                      </div>
+                      <p className="email-meta"><span>From: <b>{message.from || 'Unknown sender'}</b></span><span>Received: <b>{formatEmailDate(message.receivedAt)}</b></span></p>
+                    </div>
+                    <p className="gmail-id id-chip"><span>ID:</span> {message.id}</p>
+                  </article>
+                ))}
+                {updateMessages.length > 0 && <p className="result-count">Showing all {updateMessages.length} parsed mailbox updates</p>}
+              </section>
+            )}
+          </div>
+        )}
+      </main>
+
+      <footer className="site-footer">
+        <span><b>BetterTracker</b> © 2026</span>
+        <span>Built for high-velocity job pipelines.</span>
+      </footer>
+
+      {isFormOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeForm}>
+          <section className="application-modal panel" role="dialog" aria-modal="true" aria-labelledby="application-form-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-heading">
+              <div><p className="eyebrow">Application details</p><h2 id="application-form-title">{editingApplicationId === null ? 'Add Application' : 'Edit Application'}</h2></div>
+              <button type="button" className="close-button" onClick={closeForm} aria-label="Close">×</button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="form-grid">
+                <label>Company<input required autoFocus value={newApplication.company} onChange={(event) => updateField('company', event.target.value)} /></label>
+                <label>Role<input required value={newApplication.role} onChange={(event) => updateField('role', event.target.value)} /></label>
+                <label>Location<input value={newApplication.location} onChange={(event) => updateField('location', event.target.value)} /></label>
+                <label>Status<select value={newApplication.status} onChange={(event) => updateField('status', event.target.value as ApplicationStatus)}>{statuses.map((applicationStatus) => <option value={applicationStatus} key={applicationStatus}>{statusLabels[applicationStatus]}</option>)}</select></label>
+                <label>Date Applied<input required type="date" value={newApplication.dateApplied} onChange={(event) => updateField('dateApplied', event.target.value)} /></label>
+                <label>Job URL<input type="url" value={newApplication.jobUrl} onChange={(event) => updateField('jobUrl', event.target.value)} /></label>
+              </div>
+              <label>Notes<textarea rows={3} value={newApplication.notes} onChange={(event) => updateField('notes', event.target.value)} /></label>
               {formError && <p className="form-error">{formError}</p>}
-
               <div className="form-actions">
-                <button type="button" onClick={closeForm} disabled={isSaving}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={isSaving}>
-                  {isSaving
-                    ? 'Saving...'
-                    : editingApplicationId === null
-                      ? 'Add Application'
-                      : 'Save Changes'}
-                </button>
+                <button type="button" onClick={closeForm} disabled={isSaving}>Cancel</button>
+                <button type="submit" className="primary-button" disabled={isSaving}>{isSaving ? 'Saving...' : editingApplicationId === null ? 'Add Application' : 'Save Changes'}</button>
               </div>
             </form>
           </section>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 

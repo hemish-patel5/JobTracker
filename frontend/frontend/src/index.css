@@ -1,7 +1,7 @@
 :root {
-  font-family: Tahoma, Verdana, Arial, sans-serif;
-  color: #111;
-  background: #bdbdbd;
+  font-family: Inter, Arial, sans-serif;
+  color: #191a23;
+  background: #f4f4f5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +16,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #bdbdbd;
+  background: #f4f4f5;
 }
 
 button,
