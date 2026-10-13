@@ -662,18 +662,14 @@ function App() {
 
         {activePage === 'updates' && (
           <div className="page-stack updates-page">
-            <section className="sync-card panel">
-              <div>
-                <div className="card-title-row"><h1>Sync Feed</h1></div>
+            <section className="updates-toolbar panel">
+              <div className="updates-toolbar-title">
+                <h1>Updates Feed</h1>
               </div>
               <div className="outcome-counts">
                 <span className="outcome-count outcome-success">Success <b>{successCount}</b></span>
                 <span className="outcome-count outcome-rejection">Rejection <b>{rejectionCount}</b></span>
               </div>
-            </section>
-
-            <section className="section-heading panel">
-              <div><h2>Updates</h2></div>
               <div className="email-controls">
                 <button type="button" onClick={() => setEmailSort((current) => current === 'latest' ? 'oldest' : 'latest')}>
                   Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}
@@ -697,7 +693,7 @@ function App() {
                 {sortedUpdateMessages.map((message) => (
                   <article className="update-card panel" key={message.id}>
                     <div className="update-copy">
-                      <div className="card-title-row">
+                      <div className="update-heading">
                         <h2 className="gmail-subject"><a href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`} target="_blank" rel="noreferrer">{message.subject || '(No subject)'}</a></h2>
                         <span className={`email-outcome ${message.outcome === 'REJECTION' ? 'email-outcome-rejection' : 'email-outcome-success'}`}>
                           {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
