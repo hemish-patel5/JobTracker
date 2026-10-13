@@ -101,6 +101,7 @@
 .outcome-rejection { color:#fff; border-color:var(--rejection); background:var(--rejection); }
 .update-card { padding:20px; }
 .update-heading { display:flex; min-width:0; align-items:flex-start; flex-direction:column; gap:8px; }
+.update-classification { display:inline-flex; flex-shrink:0; align-items:center; align-self:center; color:var(--success); font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
 .email-outcome-success { color:#fff; border-color:var(--success); background:var(--success); }
 .email-outcome-rejection { color:#fff; border-color:var(--rejection); background:var(--rejection); }
 .id-chip { flex-shrink:0; padding:6px 9px; }
@@ -137,6 +138,7 @@
   .updates-toolbar { grid-template-columns:1fr auto; }
   .updates-toolbar-title { grid-column:1/-1; }
   .update-card { align-items:flex-start; flex-direction:column; }
+  .update-classification { align-self:flex-start; }
 }
 
 @media (max-width:560px) {

@@ -28,6 +28,15 @@ const statusLabels: Record<ApplicationStatus, string> = {
 
 const statuses = Object.keys(statusLabels) as ApplicationStatus[]
 
+const successClassificationLabels: Partial<
+  Record<NonNullable<GmailMessage['classification']>, string>
+> = {
+  OFFER: 'Offer',
+  INTERVIEW: 'Interview',
+  ONLINE_ASSESSMENT: 'Online Assessment',
+  PROGRESSED: 'Progressed',
+}
+
 const emptyApplication: NewJobApplication = {
   company: '',
   role: '',
@@ -736,19 +745,30 @@ function App() {
             )}
             {!updatesLoading && !updatesError && (
               <section className="update-list" aria-label="Update emails">
-                {sortedUpdateMessages.map((message) => (
-                  <article className="update-card panel" key={message.id}>
-                    <div className="update-copy">
-                      <div className="update-heading">
-                        <h2 className="gmail-subject"><a href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`} target="_blank" rel="noreferrer">{message.subject || '(No subject)'}</a></h2>
-                        <span className={`email-outcome ${message.outcome === 'REJECTION' ? 'email-outcome-rejection' : 'email-outcome-success'}`}>
-                          {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
-                        </span>
+                {sortedUpdateMessages.map((message) => {
+                  const successClassification = message.outcome === 'SUCCESS' && message.classification
+                    ? successClassificationLabels[message.classification]
+                    : undefined
+
+                  return (
+                    <article className="update-card panel" key={message.id}>
+                      <div className="update-copy">
+                        <div className="update-heading">
+                          <h2 className="gmail-subject"><a href={`https://mail.google.com/mail/u/0/#inbox/${message.id}`} target="_blank" rel="noreferrer">{message.subject || '(No subject)'}</a></h2>
+                          <span className={`email-outcome ${message.outcome === 'REJECTION' ? 'email-outcome-rejection' : 'email-outcome-success'}`}>
+                            {message.outcome === 'REJECTION' ? 'Rejection' : 'Success'}
+                          </span>
+                        </div>
+                        <p className="email-meta"><span>From: <b>{message.from || 'Unknown sender'}</b></span><span>Received: <b>{formatEmailDate(message.receivedAt)}</b></span></p>
                       </div>
-                      <p className="email-meta"><span>From: <b>{message.from || 'Unknown sender'}</b></span><span>Received: <b>{formatEmailDate(message.receivedAt)}</b></span></p>
-                    </div>
-                  </article>
-                ))}
+                      {successClassification && (
+                        <span className="update-classification">
+                          {successClassification}
+                        </span>
+                      )}
+                    </article>
+                  )
+                })}
                 {updateMessages.length > 0 && <p className="result-count">Showing all {updateMessages.length} parsed mailbox updates</p>}
               </section>
             )}

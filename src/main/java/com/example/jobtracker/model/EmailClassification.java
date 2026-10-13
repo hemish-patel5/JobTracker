@@ -11,5 +11,6 @@ public enum EmailClassification {
     ROLE_CLOSED,
     WITHDRAWN,
     REVIEW_REQUIRED,
+    JOB_RECOMMENDATION,
     OTHER
 }

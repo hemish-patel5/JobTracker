@@ -1,6 +1,7 @@
 package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
+import com.example.jobtracker.model.EmailClassification;
 import com.example.jobtracker.model.EmailOutcome;
 import com.example.jobtracker.model.JobApplication;
 import com.example.jobtracker.model.ProcessedGmailMessage;
@@ -142,14 +143,18 @@ public class GmailService {
                             applications
                     );
 
+            EmailClassificationResult classification =
+                    jobEmailClassifier.classify(gmailMessage);
+
+            boolean isJobRecommendation =
+                    classification.classification() ==
+                            EmailClassification.JOB_RECOMMENDATION;
+
             boolean jobRelated =
-                    matchesApplication &&
+                    (matchesApplication || isJobRecommendation) &&
                             jobEmailDetector.isJobRelated(
                                     gmailMessage
                             );
-
-            EmailClassificationResult classification =
-                    jobEmailClassifier.classify(gmailMessage);
 
             boolean updateRelated =
                     matchesApplication &&
@@ -270,11 +275,14 @@ public class GmailService {
                         savedMessage,
                         applications
                 );
+        boolean isJobRecommendation =
+                classification.classification() ==
+                        EmailClassification.JOB_RECOMMENDATION;
         boolean updateRelated =
                 matchesApplication &&
                         updateEmailDetector.isUpdateRelated(savedMessage);
         boolean jobRelated =
-                matchesApplication &&
+                (matchesApplication || isJobRecommendation) &&
                         jobEmailDetector.isJobRelated(savedMessage);
         EmailOutcome outcome =
                 jobEmailClassifier.detectOutcome(savedMessage);

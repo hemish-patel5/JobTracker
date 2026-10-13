@@ -17,6 +17,7 @@ export interface GmailMessage {
     | 'ROLE_CLOSED'
     | 'WITHDRAWN'
     | 'REVIEW_REQUIRED'
+    | 'JOB_RECOMMENDATION'
     | 'OTHER'
   matchedPhrase?: string | null
 }

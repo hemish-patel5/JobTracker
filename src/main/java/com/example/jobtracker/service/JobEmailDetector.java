@@ -1,6 +1,7 @@
 package com.example.jobtracker.service;
 
 import com.example.jobtracker.dto.GmailMessageDto;
+import com.example.jobtracker.model.EmailClassification;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,10 +15,15 @@ public class JobEmailDetector {
 
     public boolean isJobRelated(GmailMessageDto email) {
 
-        if (!classifier.isJobClassification(
-                classifier.classify(email).classification()
-        )) {
+        EmailClassification classification =
+                classifier.classify(email).classification();
+
+        if (!classifier.isJobClassification(classification)) {
             return false;
+        }
+
+        if (classification == EmailClassification.JOB_RECOMMENDATION) {
+            return true;
         }
 
         String text = (

@@ -293,9 +293,22 @@ public class JobEmailClassifier {
             "no hiring decision has been made"
     );
 
+    private static final List<String> JOB_RECOMMENDATION_PHRASES = List.of(
+            "job recommendations",
+            "new job recommendations",
+            "jobs based on your profile",
+            "roles could be a match",
+            "recommended jobs",
+            "weekly job alert",
+            "new jobs for you",
+            "jobs you may be interested in",
+            "new job openings",
+            "new positions available",
+            "jobs newsletter"
+    );
+
     private static final List<String> OTHER_PHRASES = List.of(
             "newsletter",
-            "job alert",
             "apply now",
             "new vacancies",
             "career fair",
@@ -303,13 +316,9 @@ public class JobEmailClassifier {
             "discount offer",
             "promotional offer",
             "weekly digest",
-            "new job openings",
-            "jobs newsletter",
             "career opportunities",
             "recruitment advertising",
             "upcoming careers event",
-            "job recommendations",
-            "new positions available",
             "shop hot deals",
             "shop now",
             "limited time deal",
@@ -403,6 +412,15 @@ public class JobEmailClassifier {
         Optional<String> pendingPhrase = firstMatch(text, PENDING_PHRASES);
         if (pendingPhrase.isPresent()) {
             return result(EmailClassification.PENDING, pendingPhrase.get());
+        }
+
+        Optional<String> recommendationPhrase =
+                firstMatch(text, JOB_RECOMMENDATION_PHRASES);
+        if (recommendationPhrase.isPresent()) {
+            return result(
+                    EmailClassification.JOB_RECOMMENDATION,
+                    recommendationPhrase.get()
+            );
         }
 
         Optional<String> otherPhrase = firstMatch(text, OTHER_PHRASES);

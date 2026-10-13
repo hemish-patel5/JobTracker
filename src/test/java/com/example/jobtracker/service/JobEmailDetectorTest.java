@@ -11,13 +11,14 @@ class JobEmailDetectorTest {
             new JobEmailDetector(new JobEmailClassifier());
 
     @Test
-    void filtersJobAlertsEvenWhenTheyMentionSoftwareRoles() {
+    void includesRelevantJobRecommendations() {
         GmailMessageDto email = message(
-                "Weekly job alert",
-                "New Software Engineer jobs are available. Apply now."
+                "Junior Data Scientist + 11 new jobs",
+                "We have new job recommendations for you. " +
+                        "These roles could be a match."
         );
 
-        assertThat(detector.isJobRelated(email)).isFalse();
+        assertThat(detector.isJobRelated(email)).isTrue();
     }
 
     @Test

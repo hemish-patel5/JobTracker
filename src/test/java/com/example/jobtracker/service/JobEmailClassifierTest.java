@@ -84,7 +84,7 @@ class JobEmailClassifierTest {
         );
         assertClassification(
                 "Here is your weekly digest of new job openings.",
-                EmailClassification.OTHER
+                EmailClassification.JOB_RECOMMENDATION
         );
     }
 
