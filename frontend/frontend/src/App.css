@@ -85,6 +85,7 @@
 .email-body-error { margin:10px 0 0; color:var(--rejection); font-size:11px; }
 .email-card-footer { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-top:17px; padding-top:13px; border-top:1.5px dashed var(--soft); }
 .email-card-actions { display:flex; align-items:center; gap:8px; }
+.email-card-actions .small-button { appearance:none; min-height:32px; padding:6px 12px; border:1.5px solid var(--ink); border-radius:11px; color:var(--ink); background:#fff; box-shadow:2px 2px 0 var(--ink); font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:700; line-height:1.2; text-decoration:none; }
 .gmail-id { margin:0; color:var(--muted); font-size:10px; }
 .gmail-id code,.id-chip { border:1px solid #c7c7cb; border-radius:7px; color:var(--ink); background:var(--canvas); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 .gmail-id code { padding:3px 6px; }
