@@ -6,7 +6,11 @@ import {
   type NewJobApplication,
   updateApplication,
 } from './api/applications'
-import { getGmailMessages, getUpdateMessages } from './api/gmail'
+import {
+  getGmailMessageBody,
+  getGmailMessages,
+  getUpdateMessages,
+} from './api/gmail'
 import { API_URL } from './config'
 import type { ApplicationStatus, JobApplication } from './types/jobApplication'
 import type { GmailMessage } from './types/gmailMessage'
@@ -102,6 +106,13 @@ function App() {
   const [gmailError, setGmailError] = useState<string | null>(null)
   const [expandedEmailIds, setExpandedEmailIds] = useState<Set<string>>(
     () => new Set(),
+  )
+  const [emailBodies, setEmailBodies] = useState<Record<string, string>>({})
+  const [loadingEmailBodyIds, setLoadingEmailBodyIds] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const [emailBodyErrors, setEmailBodyErrors] = useState<Record<string, string>>(
+    {},
   )
   const [emailSort, setEmailSort] = useState<'latest' | 'oldest'>('latest')
   const [updateMessages, setUpdateMessages] = useState<GmailMessage[]>([])
@@ -399,18 +410,45 @@ function App() {
     }
   }
 
-  const toggleEmailBody = (messageId: string) => {
-    setExpandedEmailIds((current) => {
-      const next = new Set(current)
+  const toggleEmailBody = async (message: GmailMessage) => {
+    if (expandedEmailIds.has(message.id)) {
+      setExpandedEmailIds((current) => {
+        const next = new Set(current)
+        next.delete(message.id)
+        return next
+      })
+      return
+    }
 
-      if (next.has(messageId)) {
-        next.delete(messageId)
-      } else {
-        next.add(messageId)
+    if (emailBodies[message.id] === undefined) {
+      setLoadingEmailBodyIds((current) => new Set(current).add(message.id))
+      setEmailBodyErrors((current) => {
+        const next = { ...current }
+        delete next[message.id]
+        return next
+      })
+
+      try {
+        const body = await getGmailMessageBody(message.id)
+        setEmailBodies((current) => ({ ...current, [message.id]: body }))
+      } catch (requestError) {
+        setEmailBodyErrors((current) => ({
+          ...current,
+          [message.id]: requestError instanceof Error
+            ? requestError.message
+            : 'Unable to load the full email',
+        }))
+        return
+      } finally {
+        setLoadingEmailBodyIds((current) => {
+          const next = new Set(current)
+          next.delete(message.id)
+          return next
+        })
       }
+    }
 
-      return next
-    })
+    setExpandedEmailIds((current) => new Set(current).add(message.id))
   }
 
   return (
@@ -622,7 +660,8 @@ function App() {
                 {sortedGmailMessages.map((message) => {
                   const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${message.id}`
                   const isExpanded = expandedEmailIds.has(message.id)
-                  const hasFullBody = Boolean(message.fullBody?.trim())
+                  const fullBody = emailBodies[message.id]
+                  const isBodyLoading = loadingEmailBodyIds.has(message.id)
                   return (
                     <article className="gmail-message panel" key={message.id}>
                       <div className="email-card-top">
@@ -632,23 +671,30 @@ function App() {
                         </div>
                       </div>
                       <p className={`email-snippet ${isExpanded ? 'email-body-expanded' : ''}`}>
-                        {isExpanded && hasFullBody
-                          ? message.fullBody
+                        {isExpanded && fullBody !== undefined
+                          ? fullBody || 'This email has no readable text body.'
                           : message.snippet || 'No message preview available.'}
                       </p>
+                      {emailBodyErrors[message.id] && (
+                        <p className="email-body-error" role="alert">
+                          {emailBodyErrors[message.id]}
+                        </p>
+                      )}
                       <div className="email-card-footer">
-                        <p className="gmail-id">Gmail ID: <code>{message.id}</code></p>
                         <div className="email-card-actions">
-                          {hasFullBody && (
-                            <button
-                              type="button"
-                              className="small-button"
-                              aria-expanded={isExpanded}
-                              onClick={() => toggleEmailBody(message.id)}
-                            >
-                              {isExpanded ? 'Show less' : 'Show more'}
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className="small-button"
+                            aria-expanded={isExpanded}
+                            disabled={isBodyLoading}
+                            onClick={() => void toggleEmailBody(message)}
+                          >
+                            {isBodyLoading
+                              ? 'Loading...'
+                              : isExpanded
+                                ? 'Show less'
+                                : 'Show more'}
+                          </button>
                           <a className="small-button" href={gmailUrl} target="_blank" rel="noreferrer">Open in Gmail</a>
                         </div>
                       </div>
@@ -701,7 +747,6 @@ function App() {
                       </div>
                       <p className="email-meta"><span>From: <b>{message.from || 'Unknown sender'}</b></span><span>Received: <b>{formatEmailDate(message.receivedAt)}</b></span></p>
                     </div>
-                    <p className="gmail-id id-chip"><span>ID:</span> {message.id}</p>
                   </article>
                 ))}
                 {updateMessages.length > 0 && <p className="result-count">Showing all {updateMessages.length} parsed mailbox updates</p>}
@@ -712,8 +757,7 @@ function App() {
       </main>
 
       <footer className="site-footer">
-        <span><b>BetterTracker</b> © 2026</span>
-        <span>Built for high-velocity job pipelines.</span>
+        <span><b>Hemish Patel</b> © 2026</span>
       </footer>
 
       {isFormOpen && (

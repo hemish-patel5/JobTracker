@@ -81,8 +81,9 @@
 .email-card-top { display:flex; justify-content:space-between; gap:20px; }
 .email-meta b { color:var(--ink); font-weight:600; }
 .email-snippet { margin:16px 0 0; color:#3f3f46; font-size:13px; line-height:1.55; }
-.email-body-expanded { white-space:pre-wrap; }
-.email-card-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:17px; padding-top:13px; border-top:1.5px dashed var(--soft); }
+.email-body-expanded { overflow-wrap:anywhere; white-space:pre-wrap; word-break:break-word; }
+.email-body-error { margin:10px 0 0; color:var(--rejection); font-size:11px; }
+.email-card-footer { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-top:17px; padding-top:13px; border-top:1.5px dashed var(--soft); }
 .email-card-actions { display:flex; align-items:center; gap:8px; }
 .gmail-id { margin:0; color:var(--muted); font-size:10px; }
 .gmail-id code,.id-chip { border:1px solid #c7c7cb; border-radius:7px; color:var(--ink); background:var(--canvas); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -95,7 +96,7 @@
 .outcome-counts { flex-shrink:0; gap:10px; }
 .outcome-count { display:inline-flex; align-items:center; gap:8px; padding:7px 10px; border:1.5px solid var(--ink); border-radius:10px; font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
 .outcome-count b { display:grid; width:22px; height:22px; place-items:center; border-radius:6px; background:#fff; color:var(--ink); }
-.outcome-success { color:var(--success); border-color:var(--success); }
+.outcome-success { color:#fff; border-color:var(--success); background:var(--success); }
 .outcome-rejection { color:#fff; border-color:var(--rejection); background:var(--rejection); }
 .update-card { padding:20px; }
 .update-heading { display:flex; min-width:0; align-items:flex-start; flex-direction:column; gap:8px; }

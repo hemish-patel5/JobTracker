@@ -9,7 +9,9 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/gmail")
@@ -46,6 +48,23 @@ public class GmailController {
 
         return gmailService
                 .getUpdateMessages();
+    }
+
+    @GetMapping("/messages/{messageId}/body")
+    public ResponseEntity<Map<String, String>> getMessageBody(
+            @PathVariable String messageId
+    ) throws Exception {
+
+        Optional<String> body =
+                gmailService.getMessageBody(messageId);
+
+        if (body.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(
+                Map.of("body", body.get())
+        );
     }
 
     @GetMapping("/connect")

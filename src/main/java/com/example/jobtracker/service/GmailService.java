@@ -98,8 +98,7 @@ public class GmailService {
                     );
 
             if (processedMessage.isPresent() &&
-                    processedMessage.get().hasMessageData() &&
-                    processedMessage.get().hasStoredFullBody()) {
+                    processedMessage.get().hasMessageData()) {
                 refreshUpdateClassification(
                         processedMessage.get()
                 );
@@ -118,17 +117,6 @@ public class GmailService {
 
             String fullBody =
                     extractFullBody(message.getPayload());
-
-            if (processedMessage.isPresent() &&
-                    processedMessage.get().hasMessageData()) {
-                ProcessedGmailMessage savedMessage =
-                        processedMessage.get();
-
-                savedMessage.setFullBody(fullBody);
-                processedMessageRepository.save(savedMessage);
-                refreshUpdateClassification(savedMessage);
-                continue;
-            }
 
             GmailMessageDto gmailMessage =
                     new GmailMessageDto(
@@ -174,6 +162,56 @@ public class GmailService {
             );
         }
 
+    }
+
+    public Optional<String> getMessageBody(
+            String gmailMessageId
+    ) throws Exception {
+
+        Optional<ProcessedGmailMessage> savedMessage =
+                processedMessageRepository.findById(gmailMessageId);
+
+        if (savedMessage.isEmpty()) {
+            return Optional.empty();
+        }
+
+        ProcessedGmailMessage message = savedMessage.get();
+
+        if (message.hasStoredFullBody()) {
+            String cleanedBody =
+                    sanitizeBodyForDisplay(
+                            message.getFullBody()
+                    );
+
+            if (!cleanedBody.equals(message.getFullBody())) {
+                message.setFullBody(cleanedBody);
+                processedMessageRepository.save(message);
+            }
+
+            return Optional.of(cleanedBody);
+        }
+
+        if (authService.getCredential() == null) {
+            throw new IllegalStateException(
+                    "Gmail is not connected"
+            );
+        }
+
+        Message gmailMessage =
+                authService.getGmailClient()
+                        .users()
+                        .messages()
+                        .get("me", gmailMessageId)
+                        .setFormat("full")
+                        .execute();
+
+        String fullBody =
+                extractFullBody(gmailMessage.getPayload());
+
+        message.setFullBody(fullBody);
+        processedMessageRepository.save(message);
+
+        return Optional.of(fullBody);
     }
 
     private void refreshUpdateClassification(
@@ -252,7 +290,7 @@ public class GmailService {
                 decodeHtml(message.getSender()),
                 decodeHtml(message.getSubject()),
                 decodeHtml(message.getSnippet()),
-                decodeHtml(message.getFullBody()),
+                null,
                 message.getReceivedAt(),
                 outcome
         );
@@ -354,10 +392,36 @@ public class GmailService {
             return "";
         }
 
-        return decodeHtml(value)
+        String normalizedBody = decodeHtml(value)
                 .replace('\u00a0', ' ')
+                .replace("\u200B", "")
+                .replace("\u200C", "")
+                .replace("\u200D", "")
+                .replace("\uFEFF", "")
                 .replaceAll("[\\t\\x0B\\f\\r ]+", " ")
                 .replaceAll(" *\\n *", "\n")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+
+        return sanitizeBodyForDisplay(normalizedBody);
+    }
+
+    private String sanitizeBodyForDisplay(String value) {
+
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        return value
+                .replaceAll(
+                        "(?i)(https?://[^\\s?]+)\\?[^\\s]+",
+                        "$1"
+                )
+                .replaceAll(
+                        "(?im)^\\s*(tracking(?:id)?|midtoken|tr[kc]|lipi|eid|otptoken)=[^\\n]*$",
+                        ""
+                )
+                .replaceAll("[ ]+\\n", "\n")
                 .replaceAll("\\n{3,}", "\n\n")
                 .trim();
     }

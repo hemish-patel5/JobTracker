@@ -28,3 +28,18 @@ export async function getUpdateMessages(
 
   return response.json() as Promise<GmailMessage[]>
 }
+
+export async function getGmailMessageBody(
+  messageId: string,
+): Promise<string> {
+  const response = await fetch(
+    `${API_URL}/api/gmail/messages/${encodeURIComponent(messageId)}/body`,
+  )
+
+  if (!response.ok) {
+    throw new Error(`Unable to load the full email (${response.status})`)
+  }
+
+  const result = (await response.json()) as { body: string }
+  return result.body
+}

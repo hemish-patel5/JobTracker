@@ -1,4 +1,6 @@
-const DEFAULT_API_URL = 'https://jobtracker-5j2t.onrender.com'
+const DEFAULT_API_URL = import.meta.env.DEV
+  ? 'http://localhost:8080'
+  : 'https://jobtracker-5j2t.onrender.com'
 
 // VITE_API_URL allows the backend host to be changed without editing code.
 // The deployed Render URL is the fallback so a missing Vercel variable does
