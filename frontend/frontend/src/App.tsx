@@ -100,6 +100,9 @@ function App() {
   const [gmailLoading, setGmailLoading] = useState(false)
   const [gmailLoaded, setGmailLoaded] = useState(false)
   const [gmailError, setGmailError] = useState<string | null>(null)
+  const [expandedEmailIds, setExpandedEmailIds] = useState<Set<string>>(
+    () => new Set(),
+  )
   const [emailSort, setEmailSort] = useState<'latest' | 'oldest'>('latest')
   const [updateMessages, setUpdateMessages] = useState<GmailMessage[]>([])
   const [updatesLoading, setUpdatesLoading] = useState(false)
@@ -396,6 +399,20 @@ function App() {
     }
   }
 
+  const toggleEmailBody = (messageId: string) => {
+    setExpandedEmailIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(messageId)) {
+        next.delete(messageId)
+      } else {
+        next.add(messageId)
+      }
+
+      return next
+    })
+  }
+
   return (
     <div className="tracker">
       <header className="tracker-header">
@@ -462,32 +479,26 @@ function App() {
           <div className="page-stack">
             <section className="page-intro">
               <div>
-                <p className="eyebrow">Pipeline velocity</p>
                 <h1>Applications</h1>
               </div>
-              <span className="outlined-pill">Updated today</span>
             </section>
 
             <section className="summary" aria-label="Application summary">
               <article className="metric-card">
                 <span>Total</span>
                 <strong>{applications.length}</strong>
-                <small>roles</small>
               </article>
               <article className="metric-card">
                 <span>Applied</span>
                 <strong>{countByStatus('APPLIED')}</strong>
-                <small>active</small>
               </article>
               <article className="metric-card">
                 <span>Interview</span>
                 <strong>{countByStatus('INTERVIEW')}</strong>
-                <small>rounds</small>
               </article>
               <article className="metric-card metric-card-dark">
                 <span>Offer</span>
                 <strong>{countByStatus('OFFER')}</strong>
-                <small>extended</small>
               </article>
             </section>
 
@@ -571,9 +582,7 @@ function App() {
           <div className="page-stack email-page">
             <section className="page-intro">
               <div>
-                <p className="eyebrow">Connected inbox</p>
                 <h1>Job Emails</h1>
-                <p className="intro-copy">Recruitment messages detected from your Gmail inbox.</p>
               </div>
               <span className="outlined-pill">{gmailMessages.length} messages</span>
             </section>
@@ -612,6 +621,8 @@ function App() {
               <section className="email-list" aria-label="Gmail messages">
                 {sortedGmailMessages.map((message) => {
                   const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${message.id}`
+                  const isExpanded = expandedEmailIds.has(message.id)
+                  const hasFullBody = Boolean(message.fullBody?.trim())
                   return (
                     <article className="gmail-message panel" key={message.id}>
                       <div className="email-card-top">
@@ -620,10 +631,26 @@ function App() {
                           <p className="email-meta"><span><b>From:</b> {message.from || 'Unknown sender'}</span><span>Received: {formatEmailDate(message.receivedAt)}</span></p>
                         </div>
                       </div>
-                      <p className="email-snippet">{message.snippet || 'No message preview available.'}</p>
+                      <p className={`email-snippet ${isExpanded ? 'email-body-expanded' : ''}`}>
+                        {isExpanded && hasFullBody
+                          ? message.fullBody
+                          : message.snippet || 'No message preview available.'}
+                      </p>
                       <div className="email-card-footer">
                         <p className="gmail-id">Gmail ID: <code>{message.id}</code></p>
-                        <a className="small-button" href={gmailUrl} target="_blank" rel="noreferrer">Open in Gmail</a>
+                        <div className="email-card-actions">
+                          {hasFullBody && (
+                            <button
+                              type="button"
+                              className="small-button"
+                              aria-expanded={isExpanded}
+                              onClick={() => toggleEmailBody(message.id)}
+                            >
+                              {isExpanded ? 'Show less' : 'Show more'}
+                            </button>
+                          )}
+                          <a className="small-button" href={gmailUrl} target="_blank" rel="noreferrer">Open in Gmail</a>
+                        </div>
                       </div>
                     </article>
                   )
@@ -637,8 +664,7 @@ function App() {
           <div className="page-stack updates-page">
             <section className="sync-card panel">
               <div>
-                <div className="card-title-row"><h1>Sync Feed</h1><span className="outlined-pill">Live</span></div>
-                <p>Application outcomes parsed directly from your inbox.</p>
+                <div className="card-title-row"><h1>Sync Feed</h1></div>
               </div>
               <div className="outcome-counts">
                 <span className="outcome-count outcome-success">Success <b>{successCount}</b></span>
@@ -647,7 +673,7 @@ function App() {
             </section>
 
             <section className="section-heading panel">
-              <div><h2>Updates</h2><span>{updateMessages.length} total</span></div>
+              <div><h2>Updates</h2></div>
               <div className="email-controls">
                 <button type="button" onClick={() => setEmailSort((current) => current === 'latest' ? 'oldest' : 'latest')}>
                   Sort: {emailSort === 'latest' ? 'Latest' : 'Oldest'}

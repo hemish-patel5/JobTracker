@@ -81,7 +81,9 @@
 .email-card-top { display:flex; justify-content:space-between; gap:20px; }
 .email-meta b { color:var(--ink); font-weight:600; }
 .email-snippet { margin:16px 0 0; color:#3f3f46; font-size:13px; line-height:1.55; }
+.email-body-expanded { white-space:pre-wrap; }
 .email-card-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:17px; padding-top:13px; border-top:1.5px dashed var(--soft); }
+.email-card-actions { display:flex; align-items:center; gap:8px; }
 .gmail-id { margin:0; color:var(--muted); font-size:10px; }
 .gmail-id code,.id-chip { border:1px solid #c7c7cb; border-radius:7px; color:var(--ink); background:var(--canvas); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
 .gmail-id code { padding:3px 6px; }
@@ -140,7 +142,7 @@
   .page-intro,.section-heading,.filters,.application-card,.email-card-footer { align-items:stretch; flex-direction:column; }
   .page-intro { align-items:flex-start; }
   .summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .application-actions,.email-controls { width:100%; }
+  .application-actions,.email-controls,.email-card-actions { width:100%; }
   .application-actions button,.email-controls button,.small-button { flex:1; }
   .outcome-counts { width:100%; align-items:stretch; flex-direction:column; }
   .outcome-count { justify-content:space-between; }

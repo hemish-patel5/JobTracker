@@ -20,6 +20,9 @@ public class ProcessedGmailMessage {
     @Column(length = 4000)
     private String snippet;
 
+    @Column(columnDefinition = "TEXT")
+    private String fullBody;
+
     private Boolean jobRelated;
 
     private Long receivedAt;
@@ -48,6 +51,7 @@ public class ProcessedGmailMessage {
             String sender,
             String subject,
             String snippet,
+            String fullBody,
             boolean jobRelated,
             Long receivedAt,
             boolean allowedCategory,
@@ -60,6 +64,7 @@ public class ProcessedGmailMessage {
         this.sender = sender;
         this.subject = subject;
         this.snippet = snippet;
+        this.fullBody = fullBody;
         this.jobRelated = jobRelated;
         this.receivedAt = receivedAt;
         this.allowedCategory = allowedCategory;
@@ -67,6 +72,33 @@ public class ProcessedGmailMessage {
         this.outcome = outcome;
         this.fullBodyClassified = fullBodyClassified;
         this.notificationSent = false;
+    }
+
+    public ProcessedGmailMessage(
+            String gmailMessageId,
+            String sender,
+            String subject,
+            String snippet,
+            boolean jobRelated,
+            Long receivedAt,
+            boolean allowedCategory,
+            boolean updateRelated,
+            EmailOutcome outcome,
+            boolean fullBodyClassified
+    ) {
+        this(
+                gmailMessageId,
+                sender,
+                subject,
+                snippet,
+                null,
+                jobRelated,
+                receivedAt,
+                allowedCategory,
+                updateRelated,
+                outcome,
+                fullBodyClassified
+        );
     }
 
     public String getGmailMessageId() {
@@ -87,6 +119,18 @@ public class ProcessedGmailMessage {
 
     public String getSnippet() {
         return snippet;
+    }
+
+    public String getFullBody() {
+        return fullBody;
+    }
+
+    public void setFullBody(String fullBody) {
+        this.fullBody = fullBody;
+    }
+
+    public boolean hasStoredFullBody() {
+        return fullBody != null;
     }
 
     public Boolean getJobRelated() {

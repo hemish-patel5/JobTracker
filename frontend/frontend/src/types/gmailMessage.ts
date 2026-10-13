@@ -3,6 +3,7 @@ export interface GmailMessage {
   from: string
   subject: string
   snippet: string
+  fullBody?: string
   receivedAt: number | null
   outcome: 'SUCCESS' | 'REJECTION'
 }

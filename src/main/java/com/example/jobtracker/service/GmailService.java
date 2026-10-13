@@ -98,8 +98,8 @@ public class GmailService {
                     );
 
             if (processedMessage.isPresent() &&
-                    processedMessage.get()
-                            .hasMessageData()) {
+                    processedMessage.get().hasMessageData() &&
+                    processedMessage.get().hasStoredFullBody()) {
                 refreshUpdateClassification(
                         processedMessage.get()
                 );
@@ -116,12 +116,27 @@ public class GmailService {
                             .setFormat("full")
                             .execute();
 
+            String fullBody =
+                    extractFullBody(message.getPayload());
+
+            if (processedMessage.isPresent() &&
+                    processedMessage.get().hasMessageData()) {
+                ProcessedGmailMessage savedMessage =
+                        processedMessage.get();
+
+                savedMessage.setFullBody(fullBody);
+                processedMessageRepository.save(savedMessage);
+                refreshUpdateClassification(savedMessage);
+                continue;
+            }
+
             GmailMessageDto gmailMessage =
                     new GmailMessageDto(
                             message.getId(),
                             decodeHtml(getHeader(message, "From")),
                             decodeHtml(getHeader(message, "Subject")),
                             decodeHtml(message.getSnippet()),
+                            fullBody,
                             message.getInternalDate(),
                             null
                     );
@@ -139,7 +154,7 @@ public class GmailService {
             EmailOutcome outcome =
                     jobEmailClassifier.detectOutcome(
                             gmailMessage.subject(),
-                            extractFullBody(message.getPayload())
+                            gmailMessage.fullBody()
                     );
 
             processedMessageRepository.save(
@@ -148,6 +163,7 @@ public class GmailService {
                             gmailMessage.from(),
                             gmailMessage.subject(),
                             gmailMessage.snippet(),
+                            gmailMessage.fullBody(),
                             jobRelated,
                             gmailMessage.receivedAt(),
                             true,
@@ -168,6 +184,7 @@ public class GmailService {
                 message.getSender(),
                 message.getSubject(),
                 message.getSnippet(),
+                message.getFullBody(),
                 message.getReceivedAt(),
                 message.getOutcome()
         );
@@ -211,12 +228,16 @@ public class GmailService {
                         decodeHtml(message.getSender()),
                         decodeHtml(message.getSubject()),
                         decodeHtml(message.getSnippet()),
+                        decodeHtml(message.getFullBody()),
                         message.getReceivedAt(),
                         outcome
                 );
 
         EmailOutcome savedTextOutcome =
-                jobEmailClassifier.detectOutcome(savedMessage);
+                jobEmailClassifier.detectOutcome(
+                        savedMessage.subject(),
+                        savedMessage.fullBody()
+                );
 
         if (outcome == null ||
                 (outcome == EmailOutcome.SUCCESS &&
@@ -231,6 +252,7 @@ public class GmailService {
                 decodeHtml(message.getSender()),
                 decodeHtml(message.getSubject()),
                 decodeHtml(message.getSnippet()),
+                decodeHtml(message.getFullBody()),
                 message.getReceivedAt(),
                 outcome
         );
@@ -245,6 +267,30 @@ public class GmailService {
 
     private String extractFullBody(MessagePart part) {
 
+        String plainText = extractBodyByMimeType(
+                part,
+                "text/plain"
+        );
+
+        if (!plainText.isBlank()) {
+            return normalizeBodyText(plainText);
+        }
+
+        String html = extractBodyByMimeType(
+                part,
+                "text/html"
+        );
+
+        return normalizeBodyText(
+                htmlToText(html)
+        );
+    }
+
+    private String extractBodyByMimeType(
+            MessagePart part,
+            String targetMimeType
+    ) {
+
         if (part == null) {
             return "";
         }
@@ -252,8 +298,7 @@ public class GmailService {
         StringBuilder body = new StringBuilder();
         String mimeType = part.getMimeType();
 
-        if (mimeType != null &&
-                mimeType.startsWith("text/") &&
+        if (targetMimeType.equalsIgnoreCase(mimeType) &&
                 part.getBody() != null &&
                 part.getBody().getData() != null) {
 
@@ -262,11 +307,9 @@ public class GmailService {
                         .decode(part.getBody().getData());
 
                 body.append(
-                        decodeHtml(
-                                new String(
-                                        decoded,
-                                        StandardCharsets.UTF_8
-                                )
+                        new String(
+                                decoded,
+                                StandardCharsets.UTF_8
                         )
                 );
             } catch (IllegalArgumentException ignored) {
@@ -277,11 +320,46 @@ public class GmailService {
         if (part.getParts() != null) {
             for (MessagePart childPart : part.getParts()) {
                 body.append(' ')
-                        .append(extractFullBody(childPart));
+                        .append(
+                                extractBodyByMimeType(
+                                        childPart,
+                                        targetMimeType
+                                )
+                        );
             }
         }
 
         return body.toString();
+    }
+
+    private String htmlToText(String html) {
+
+        if (html == null || html.isBlank()) {
+            return "";
+        }
+
+        return decodeHtml(html)
+                .replaceAll(
+                        "(?is)<(script|style)[^>]*>.*?</\\1>",
+                        " "
+                )
+                .replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)</p\\s*>", "\n\n")
+                .replaceAll("(?s)<[^>]+>", " ");
+    }
+
+    private String normalizeBodyText(String value) {
+
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        return decodeHtml(value)
+                .replace('\u00a0', ' ')
+                .replaceAll("[\\t\\x0B\\f\\r ]+", " ")
+                .replaceAll(" *\\n *", "\n")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
     }
 
     private String getHeader(
