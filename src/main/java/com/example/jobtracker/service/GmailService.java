@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.nio.charset.StandardCharsets;
 
 @Service
@@ -37,6 +39,8 @@ public class GmailService {
     private final JobEmailClassifier jobEmailClassifier;
     private final JobApplicationRepository jobApplicationRepository;
     private final JobApplicationMatcher jobApplicationMatcher;
+    private final AtomicBoolean classificationsRefreshed =
+            new AtomicBoolean(false);
 
     public GmailService(
             GmailAuthService authService,
@@ -60,7 +64,7 @@ public class GmailService {
             throws Exception {
 
         syncMessages(JOB_EMAIL_QUERY);
-        refreshStoredClassifications();
+        refreshStoredClassificationsOnce();
 
         return getSavedJobMessages();
     }
@@ -69,7 +73,7 @@ public class GmailService {
             throws Exception {
 
         syncMessages(UPDATE_EMAIL_QUERY);
-        refreshStoredClassifications();
+        refreshStoredClassificationsOnce();
 
         return getSavedUpdateMessages();
     }
@@ -97,19 +101,27 @@ public class GmailService {
             return;
         }
 
+        List<String> gmailMessageIds = response.getMessages()
+                .stream()
+                .map(Message::getId)
+                .toList();
+
+        if (gmailMessageIds.isEmpty()) {
+            return;
+        }
+
+        Set<String> completeMessageIds =
+                processedMessageRepository.findCompleteMessageIds(
+                        gmailMessageIds
+                );
+
         for (Message messageReference :
                 response.getMessages()) {
 
             String gmailMessageId =
                     messageReference.getId();
 
-            Optional<ProcessedGmailMessage> processedMessage =
-                    processedMessageRepository.findById(
-                            gmailMessageId
-                    );
-
-            if (processedMessage.isPresent() &&
-                    processedMessage.get().hasMessageData()) {
+            if (completeMessageIds.contains(gmailMessageId)) {
                 continue;
             }
 
@@ -194,7 +206,11 @@ public class GmailService {
 
     }
 
-    private void refreshStoredClassifications() {
+    private void refreshStoredClassificationsOnce() {
+        if (!classificationsRefreshed.compareAndSet(false, true)) {
+            return;
+        }
+
         List<JobApplication> applications =
                 jobApplicationRepository.findAll();
 
