@@ -5,6 +5,10 @@
   "outputDirectory": "frontend/frontend/dist",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://jobtracker-5j2t.onrender.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

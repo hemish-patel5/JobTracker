@@ -46,18 +46,15 @@ The `.env` file details and Gmail OAuth tokens need to be added yourself
 
 ## Production configuration
 
-The intended deployment is Neon PostgreSQL, a Spring Boot API on Google Cloud
-Run, and the React frontend on Vercel.
+Production uses Neon PostgreSQL, a Spring Boot API on Render, and the React
+frontend at `https://bettertracker.vercel.app`.
 
-Vercel builds the frontend using the root `vercel.json`. Set this Vercel
-environment variable to the public Cloud Run service URL:
+Vercel builds the frontend using the root `vercel.json`. Browser requests use
+the same-origin `/api` path, which Vercel proxies to Render. A production
+`VITE_API_URL` is therefore not required.
 
-```env
-VITE_API_URL=https://your-cloud-run-service.run.app
-```
-
-Cloud Run builds the backend using the root `Dockerfile`. Configure these
-runtime values, preferably using Google Secret Manager for secrets:
+Render builds the backend using the root `Dockerfile`. Configure these runtime
+values in the Render environment:
 
 ```env
 DB_URL=jdbc:postgresql://your-neon-pooler-host/your-database?sslmode=require
@@ -65,9 +62,10 @@ DB_USERNAME=your_neon_username
 DB_PASSWORD=your_neon_password
 GOOGLE_GMAIL_CLIENT_ID=your_google_client_id
 GOOGLE_GMAIL_CLIENT_SECRET=your_google_client_secret
-GOOGLE_GMAIL_REDIRECT_URI=https://your-cloud-run-service.run.app/api/gmail/oauth2/callback
-FRONTEND_URL=https://your-vercel-project.vercel.app
+GOOGLE_GMAIL_REDIRECT_URI=https://jobtracker-5j2t.onrender.com/api/gmail/oauth2/callback
+FRONTEND_URL=https://bettertracker.vercel.app
 NTFY_TOPIC=your_private_ntfy_topic
+SCHEDULER_SECRET=your_private_scheduler_secret
 ```
 
 Use Neon's pooled hostname for normal application traffic. The Spring JDBC URL

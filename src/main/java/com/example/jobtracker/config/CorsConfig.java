@@ -13,7 +13,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public CorsConfig(
             @Value("${app.frontend-url}") String frontendUrl
     ) {
-        this.frontendUrl = frontendUrl;
+        this.frontendUrl = frontendUrl.replaceFirst("/+$", "");
     }
 
     @Override
@@ -22,6 +22,9 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:5173",
                         frontendUrl
+                )
+                .allowedOriginPatterns(
+                        "https://job-tracker-*.vercel.app"
                 )
                 .allowedMethods(
                         "GET",
