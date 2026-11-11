@@ -129,9 +129,12 @@
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
 @media (max-width:800px) {
-  .tracker-header { flex-wrap:wrap; gap:10px; }
-  .brand-navigation { width:100%; justify-content:space-between; gap:16px; }
-  .header-actions { width:100%; justify-content:flex-end; }
+  .tracker-header { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px 14px; }
+  .brand-navigation { display:contents; }
+  .brand { grid-column:1; grid-row:1; }
+  .page-navigation { grid-column:1/-1; grid-row:2; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; padding:3px; border:1px solid var(--soft); border-radius:999px; background:var(--canvas); }
+  .page-navigation button { min-height:38px; }
+  .header-actions { grid-column:2; grid-row:1; width:auto; justify-content:flex-end; }
   .summary,.email-overview { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .email-overview div:nth-child(2) { border-right:0; }
   .email-overview div:nth-child(-n+2) { border-bottom:1px solid var(--soft); }
@@ -143,20 +146,29 @@
 
 @media (max-width:560px) {
   .tracker-header,.page-content,.site-footer { padding-right:14px; padding-left:14px; }
-  .brand-mark,.header-divider,.session-actions { display:none; }
+  .tracker-header { grid-template-columns:minmax(0,1fr) auto; padding-top:10px; padding-bottom:10px; }
+  .brand-mark,.header-divider { display:none; }
   .brand { font-size:16px; }
-  .page-navigation button { padding:7px 9px; font-size:10px; }
-  .header-actions { position:absolute; top:78px; right:14px; width:auto; }
-  .page-content { padding-top:70px; }
+  .page-navigation button { min-width:0; padding:7px 5px; font-size:9px; }
+  .header-actions { display:contents; }
+  .session-actions { grid-column:2; grid-row:1; gap:4px; }
+  .session-actions button { min-height:36px; padding:7px 9px; font-size:9px; }
+  .header-actions>.primary-button { grid-column:1/-1; grid-row:3; width:100%; min-height:42px; }
+  .page-content { padding-top:24px; padding-bottom:48px; }
   .page-intro,.section-heading,.filters,.application-card,.email-card-footer { align-items:stretch; flex-direction:column; }
   .page-intro { align-items:flex-start; }
   .summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .application-actions,.email-controls,.email-card-actions { width:100%; }
   .application-actions button,.email-controls button,.small-button { flex:1; }
-  .outcome-counts { width:100%; align-items:stretch; flex-direction:column; }
+  .outcome-counts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; align-items:stretch; }
   .outcome-count { justify-content:space-between; }
-  .updates-toolbar { display:flex; align-items:stretch; flex-direction:column; }
+  .updates-toolbar { display:flex; align-items:stretch; flex-direction:column; gap:16px; padding:20px; border-radius:18px; }
+  .updates-toolbar h1 { font-size:25px; }
   .updates-toolbar>.email-controls { justify-self:auto; }
+  .update-card { gap:12px; padding:17px; }
+  .card-title-row h2,.gmail-subject { font-size:16px; line-height:1.25; }
+  .update-card .email-meta { flex-direction:column; gap:5px; }
+  .update-classification { margin-top:2px; }
   .form-grid { grid-template-columns:1fr; }
   .site-footer { flex-direction:column; gap:5px; }
 }
